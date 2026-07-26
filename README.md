@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="brands/dreame_sf25/icon.png" width="120" alt="Dreame SF25">
+  <img src="https://raw.githubusercontent.com/maestrea76/Dreame-SF25-WIFI-HACS-Integration/main/brands/dreame_sf25/icon.png" width="120" alt="Dreame SF25">
 </p>
 
 <p align="center">

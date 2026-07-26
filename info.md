@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/maestrea76/Dreame-SF25-WIFI-HACS-Integration/main/brands/dreame_sf25/icon.png" width="96" alt="Dreame SF25">
+</p>
+
 # Dreame SF25 Waste Disposer
 
 Unofficial integration for the **Dreame SF25 WiFi Food Waste Disposer**
