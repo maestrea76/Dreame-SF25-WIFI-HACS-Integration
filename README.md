@@ -2,6 +2,13 @@
   <img src="brands/dreame_sf25/icon.png" width="120" alt="Dreame SF25">
 </p>
 
+<p align="center">
+  <a href="https://github.com/maestrea76/Dreame-SF25-WIFI-HACS-Integration/actions/workflows/validate.yaml"><img src="https://github.com/maestrea76/Dreame-SF25-WIFI-HACS-Integration/actions/workflows/validate.yaml/badge.svg" alt="Validate"></a>
+  <a href="https://github.com/hacs/integration"><img src="https://img.shields.io/badge/HACS-Custom-41BDF5.svg" alt="HACS Custom"></a>
+  <a href="https://github.com/maestrea76/Dreame-SF25-WIFI-HACS-Integration/releases"><img src="https://img.shields.io/github/v/release/maestrea76/Dreame-SF25-WIFI-HACS-Integration?display_name=tag" alt="Release"></a>
+  <img src="https://img.shields.io/github/license/maestrea76/Dreame-SF25-WIFI-HACS-Integration" alt="License">
+</p>
+
 # Dreame SF25 Waste Disposer — Home Assistant (HACS)
 
 **English** · [Español](#dreame-sf25-waste-disposer--home-assistant-hacs-español)
