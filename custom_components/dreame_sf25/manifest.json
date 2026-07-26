@@ -1,11 +1,13 @@
 {
   "domain": "dreame_sf25",
   "name": "Dreame SF25 Waste Disposer",
-  "codeowners": ["@maestrea76"],
+  "codeowners": [
+    "@maestrea76"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/maestrea76/Dreame-SF25-WIFI-HACS-Integration",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/maestrea76/Dreame-SF25-WIFI-HACS-Integration/issues",
   "requirements": [],
-  "version": "0.1.4"
+  "version": "0.1.5"
 }

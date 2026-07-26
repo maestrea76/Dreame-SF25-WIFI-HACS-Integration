@@ -21,6 +21,14 @@ open API.
 > ⚠️ Work in progress. Exposes sensors and already allows **starting/stopping
 > programs** (cycle and self-clean) and settings (child lock, silent mode).
 
+## Screenshots
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/maestrea76/Dreame-SF25-WIFI-HACS-Integration/main/docs/sensors.png" width="45%" alt="Sensors">
+  &nbsp;
+  <img src="https://raw.githubusercontent.com/maestrea76/Dreame-SF25-WIFI-HACS-Integration/main/docs/controls.png" width="45%" alt="Controls">
+</p>
+
 ## How it works
 
 The SF25 is a `COMM_MCU` device that **does not cache MIoT properties in the cloud**.
@@ -116,6 +124,14 @@ el dispositivo no dispone de API abierta.
 
 > ⚠️ Proyecto en desarrollo. Expone sensores y ya permite **iniciar/parar
 > programas** (ciclo y autolimpieza) y ajustes (bloqueo infantil, modo silencio).
+
+## Capturas
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/maestrea76/Dreame-SF25-WIFI-HACS-Integration/main/docs/sensors.png" width="45%" alt="Sensores">
+  &nbsp;
+  <img src="https://raw.githubusercontent.com/maestrea76/Dreame-SF25-WIFI-HACS-Integration/main/docs/controls.png" width="45%" alt="Controles">
+</p>
 
 ## Cómo funciona
 

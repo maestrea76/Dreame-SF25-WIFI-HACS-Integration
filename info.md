@@ -8,6 +8,12 @@ Unofficial integration for the **Dreame SF25 WiFi Food Waste Disposer**
 (food-waste composter/dehydrator, model `dreame.fwd.u2527`), by reverse-engineering
 the Dreamehome cloud.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/maestrea76/Dreame-SF25-WIFI-HACS-Integration/main/docs/sensors.png" width="45%" alt="Sensors">
+  &nbsp;
+  <img src="https://raw.githubusercontent.com/maestrea76/Dreame-SF25-WIFI-HACS-Integration/main/docs/controls.png" width="45%" alt="Controls">
+</p>
+
 ## Entities
 
 - **Sensors**: status, remaining time, energy (kWh), humidity, temperature,
@@ -40,6 +46,12 @@ first set a password via *"Forgot password"* in the app.
 Integración no oficial para el **Dreame SF25 WiFi Food Waste Disposer**
 (compostador/deshidratador de residuos, modelo `dreame.fwd.u2527`), mediante
 ingeniería inversa de la nube de Dreamehome.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/maestrea76/Dreame-SF25-WIFI-HACS-Integration/main/docs/sensors.png" width="45%" alt="Sensores">
+  &nbsp;
+  <img src="https://raw.githubusercontent.com/maestrea76/Dreame-SF25-WIFI-HACS-Integration/main/docs/controls.png" width="45%" alt="Controles">
+</p>
 
 ## Entidades
 
