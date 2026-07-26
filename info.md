@@ -16,11 +16,19 @@ the Dreamehome cloud.
 - **Controls**: program (stopped / cycle / self-clean), pause / resume,
   child lock, silent mode.
 
+## Installation
+
+1. HACS → **Integrations** → ⋮ → **Custom repositories** → add this repo
+   (category **Integration**) → **Add**.
+2. Search **Dreame SF25 Waste Disposer**, click **Download** and **restart
+   Home Assistant**.
+3. **Settings → Devices & services → Add integration →** search **Dreame SF25**.
+
 ## Setup
 
-Configured with the **email**, **password** and **region** of your Dreamehome
-account. If you signed up with Google/Apple, first set a password via
-*"Forgot password"* in the app.
+Configured with the **email**, **password** and **region** (`eu`, `cn`, `us`,
+`ru`, `sg`, `kr`) of your Dreamehome account. If you signed up with Google/Apple,
+first set a password via *"Forgot password"* in the app.
 
 > Writes only apply while the device is awake; in suspend mode they are ignored
 > and the integration reports it with an error.
@@ -41,11 +49,19 @@ ingeniería inversa de la nube de Dreamehome.
 - **Controles**: programa (parado / ciclo / autolimpieza), pausar / reanudar,
   bloqueo infantil, modo silencio.
 
+## Instalación
+
+1. HACS → **Integraciones** → ⋮ → **Repositorios personalizados** → añade este
+   repo (categoría **Integration**) → **Añadir**.
+2. Busca **Dreame SF25 Waste Disposer**, pulsa **Descargar** y **reinicia
+   Home Assistant**.
+3. **Ajustes → Dispositivos y servicios → Añadir integración →** busca **Dreame SF25**.
+
 ## Configuración
 
-Se configura con **email**, **contraseña** y **región** de tu cuenta Dreamehome.
-Si te registraste con Google/Apple, crea antes una contraseña con
-*"He olvidado mi contraseña"* en la app.
+Se configura con **email**, **contraseña** y **región** (`eu`, `cn`, `us`, `ru`,
+`sg`, `kr`) de tu cuenta Dreamehome. Si te registraste con Google/Apple, crea
+antes una contraseña con *"He olvidado mi contraseña"* en la app.
 
 > Las escrituras solo se aplican con el aparato despierto; en suspensión se
 > ignoran y la integración lo indica con un error.

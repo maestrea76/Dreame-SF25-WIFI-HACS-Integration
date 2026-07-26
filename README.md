@@ -28,13 +28,29 @@ Its state is read through a **MIoT `sendCommand` RPC** (cloud → device) agains
 Dreame API (`https://<region>.iot.dreame.tech:13267`), authenticating with your
 Dreamehome account credentials (OAuth2, `password` grant).
 
-## Installation (HACS)
+## Installation
 
-1. HACS → Integrations → ⋮ menu → *Custom repositories*.
-2. Add this repository's URL, category **Integration**.
-3. Install "Dreame SF25 Waste Disposer" and restart Home Assistant.
-4. Settings → Devices & services → *Add integration* → "Dreame SF25".
-5. Enter the **email**, **password** and **region** of your Dreamehome account.
+### Via HACS (recommended)
+
+1. Make sure [HACS](https://hacs.xyz) is installed.
+2. In HACS open **Integrations** → ⋮ (top right) → **Custom repositories**.
+3. Add the URL `https://github.com/maestrea76/Dreame-SF25-WIFI-HACS-Integration`,
+   category **Integration**, and click **Add**.
+4. Search for **Dreame SF25 Waste Disposer**, open it and click **Download**.
+5. **Restart Home Assistant.**
+
+### Manual
+
+1. Copy the `custom_components/dreame_sf25` folder into your Home Assistant
+   `config/custom_components/` directory.
+2. **Restart Home Assistant.**
+
+## Configuration
+
+1. Go to **Settings → Devices & services → Add integration** and search for
+   **Dreame SF25**.
+2. Enter the **email**, **password** and **region** (`eu`, `cn`, `us`, `ru`, `sg`,
+   `kr`) of your Dreamehome account.
 
 > If you signed up with **Google/Apple**, first set a password in the Dreamehome
 > app via *"Forgot password"* (using your Google email).
@@ -108,13 +124,29 @@ Su estado se lee mediante un **RPC MIoT `sendCommand`** (nube → dispositivo) c
 la API de Dreame (`https://<región>.iot.dreame.tech:13267`), autenticando con las
 credenciales de la cuenta Dreamehome (OAuth2, grant `password`).
 
-## Instalación (HACS)
+## Instalación
 
-1. HACS → Integraciones → menú ⋮ → *Repositorios personalizados*.
-2. Añade la URL de este repositorio, categoría **Integration**.
-3. Instala "Dreame SF25 Waste Disposer" y reinicia Home Assistant.
-4. Ajustes → Dispositivos y servicios → *Añadir integración* → "Dreame SF25".
-5. Introduce **email**, **contraseña** y **región** de tu cuenta Dreamehome.
+### Con HACS (recomendado)
+
+1. Asegúrate de tener [HACS](https://hacs.xyz) instalado.
+2. En HACS abre **Integraciones** → ⋮ (arriba a la derecha) → **Repositorios personalizados**.
+3. Añade la URL `https://github.com/maestrea76/Dreame-SF25-WIFI-HACS-Integration`,
+   categoría **Integration**, y pulsa **Añadir**.
+4. Busca **Dreame SF25 Waste Disposer**, ábrelo y pulsa **Descargar**.
+5. **Reinicia Home Assistant.**
+
+### Manual
+
+1. Copia la carpeta `custom_components/dreame_sf25` en el directorio
+   `config/custom_components/` de tu Home Assistant.
+2. **Reinicia Home Assistant.**
+
+## Configuración
+
+1. Ve a **Ajustes → Dispositivos y servicios → Añadir integración** y busca
+   **Dreame SF25**.
+2. Introduce **email**, **contraseña** y **región** (`eu`, `cn`, `us`, `ru`, `sg`,
+   `kr`) de tu cuenta Dreamehome.
 
 > Si te registraste con **Google/Apple**, primero crea una contraseña en la app
 > Dreamehome con *"He olvidado mi contraseña"* (usando tu email de Google).
