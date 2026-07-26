@@ -1,0 +1,29 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  hacs:
+    name: HACS validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: HACS validation
+        uses: hacs/action@main
+        with:
+          category: integration
+          # 'brands' se ignora porque el dominio aun no esta en home-assistant/brands
+          ignore: brands
+
+  hassfest:
+    name: Hassfest validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Hassfest validation
+        uses: home-assistant/actions/hassfest@master

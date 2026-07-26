@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="brands/dreame_sf25/icon.png" width="120" alt="Dreame SF25">
+</p>
+
 # Dreame SF25 Waste Disposer — Home Assistant (HACS)
 
 Integración no oficial para el **Dreame SF25 WiFi Food Waste Disposer**
