@@ -28,6 +28,7 @@
     "button": {
       "pause": { "name": "Pause" },
       "resume": { "name": "Resume" },
+      "open_lid": { "name": "Open lid" },
       "wake": { "name": "Wake" }
     },
     "select": {

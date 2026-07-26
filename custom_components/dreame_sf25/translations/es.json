@@ -28,6 +28,7 @@
     "button": {
       "pause": { "name": "Pausar" },
       "resume": { "name": "Reanudar" },
+      "open_lid": { "name": "Abrir tapa" },
       "wake": { "name": "Despertar" }
     },
     "select": {

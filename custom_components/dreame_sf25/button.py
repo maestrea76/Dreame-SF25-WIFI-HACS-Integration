@@ -14,7 +14,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import DreameSF25ConfigEntry
-from .const import ACTION_WAKE, DOMAIN, PROP_RUNNING, TARGET_MODEL
+from .const import ACTION_WAKE, DOMAIN, PROP_LID, PROP_RUNNING, TARGET_MODEL
 from .coordinator import DreameSF25Coordinator
 
 
@@ -46,6 +46,14 @@ BUTTONS: tuple[DreameSF25ButtonDescription, ...] = (
         name="Resume",
         icon="mdi:play",
         prop=PROP_RUNNING,
+        value=1,
+    ),
+    DreameSF25ButtonDescription(
+        key="open_lid",
+        translation_key="open_lid",
+        name="Open lid",
+        icon="mdi:tray-arrow-up",
+        prop=PROP_LID,
         value=1,
     ),
     DreameSF25ButtonDescription(
