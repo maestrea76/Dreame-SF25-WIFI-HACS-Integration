@@ -4,6 +4,88 @@
 
 # Dreame SF25 Waste Disposer — Home Assistant (HACS)
 
+**English** · [Español](#dreame-sf25-waste-disposer--home-assistant-hacs-español)
+
+Unofficial integration for the **Dreame SF25 WiFi Food Waste Disposer**
+(countertop food-waste composter/dehydrator, model `dreame.fwd.u2527`), obtained by
+**reverse-engineering** the Dreame cloud (Dreamehome app), since the device has no
+open API.
+
+> ⚠️ Work in progress. Exposes sensors and already allows **starting/stopping
+> programs** (cycle and self-clean) and settings (child lock, silent mode).
+
+## How it works
+
+The SF25 is a `COMM_MCU` device that **does not cache MIoT properties in the cloud**.
+Its state is read through a **MIoT `sendCommand` RPC** (cloud → device) against the
+Dreame API (`https://<region>.iot.dreame.tech:13267`), authenticating with your
+Dreamehome account credentials (OAuth2, `password` grant).
+
+## Installation (HACS)
+
+1. HACS → Integrations → ⋮ menu → *Custom repositories*.
+2. Add this repository's URL, category **Integration**.
+3. Install "Dreame SF25 Waste Disposer" and restart Home Assistant.
+4. Settings → Devices & services → *Add integration* → "Dreame SF25".
+5. Enter the **email**, **password** and **region** of your Dreamehome account.
+
+> If you signed up with **Google/Apple**, first set a password in the Dreamehome
+> app via *"Forgot password"* (using your Google email).
+
+## Entities
+
+**Sensors**
+
+| Entity | Prop | Notes |
+|---|---|---|
+| Status | 2.1 | working / standby / suspended |
+| Remaining time | 2.11 | minutes of the program |
+| Energy | 3.14 | Wh → kWh (÷1000), resets per cycle |
+| Humidity | 3.2 | % (rises to ~100 when drying stops) |
+| Temperature | 3.3 | °C |
+| Carbon filter (life) | 4.3 | % remaining |
+| Carbon filter (days) | 4.4 | days until cleaning |
+
+**Binary:** Running (2.10) · Lid (6.26)
+
+**Controls**
+
+| Entity | Prop | Action |
+|---|---|---|
+| Program (select) | 2.3 | Stopped (-1) / Cycle (0) / Self-clean (2) — starts and stops |
+| Pause / Resume (button) | 2.10 | Pauses (0) / resumes (1) the running program |
+| Child lock (switch) | 6.10 | on/off (only effective while a cycle runs) |
+| Silent mode (switch) | 6.17 | on/off |
+
+> Note: writes only apply while the device is **awake**; in suspend mode
+> (status = suspended) they are ignored and the integration raises an error.
+
+## Reverse engineering
+
+The tools in [`tools/`](tools/) are used for discovery:
+
+- `scan_dreame.py` — login + scan of the MIoT property space via RPC.
+- `monitor_dreame.py` — live monitor that prints property changes to map what each
+  `siid.piid` controls while operating the device.
+- `control_dreame.py` — interactive tester for writes (`set_property`) and actions.
+
+## Credits
+
+The Dreame cloud protocol is based on the work of
+[Tasshack/dreame-vacuum](https://github.com/Tasshack/dreame-vacuum).
+
+## Disclaimer
+
+Independent project, not affiliated with Dreame. Use at your own risk.
+
+---
+
+<a name="dreame-sf25-waste-disposer--home-assistant-hacs-español"></a>
+
+# Dreame SF25 Waste Disposer — Home Assistant (HACS) · Español
+
+[English](#dreame-sf25-waste-disposer--home-assistant-hacs) · **Español**
+
 Integración no oficial para el **Dreame SF25 WiFi Food Waste Disposer**
 (compostador/deshidratador de residuos de encimera, modelo `dreame.fwd.u2527`),
 obtenida por **ingeniería inversa** de la nube de Dreame (app Dreamehome), ya que
@@ -65,6 +147,7 @@ Las herramientas en [`tools/`](tools/) sirven para el descubrimiento:
 - `scan_dreame.py` — login + escaneo del espacio de propiedades MIoT vía RPC.
 - `monitor_dreame.py` — monitor en vivo que imprime cambios de propiedades para
   mapear qué controla cada `siid.piid` operando el aparato.
+- `control_dreame.py` — probador interactivo de escrituras (`set_property`) y acciones.
 
 ## Créditos
 
