@@ -45,17 +45,35 @@ def _map_status(v: Any) -> str:
         return f"unknown_{v}"
 
 
+def _fmt_remaining(v: Any) -> str | None:
+    """Minutos -> '2h 34min' (o '45min' / '3h')."""
+    try:
+        m = int(v)
+    except (ValueError, TypeError):
+        return None
+    if m < 0:
+        return None
+    h, mm = divmod(m, 60)
+    if h and mm:
+        return f"{h}h {mm}min"
+    if h:
+        return f"{h}h"
+    return f"{mm}min"
+
+
 @dataclass(frozen=True, kw_only=True)
 class DreameSF25SensorDescription(SensorEntityDescription):
     """Descripcion de sensor con clave MIoT y conversion.
 
     - prop + value_fn: sensor basado en una sola propiedad (siid, piid).
     - compute_fn: sensor calculado a partir de TODO el diccionario de datos.
+    - attrs_fn: atributos extra a partir del valor crudo de la propiedad.
     """
 
     prop: tuple[int, int] | None = None
     value_fn: Callable[[Any], Any] = lambda v: v
     compute_fn: Callable[[dict[tuple[int, int], Any]], Any] | None = None
+    attrs_fn: Callable[[Any], dict] | None = None
 
 
 SENSORS: tuple[DreameSF25SensorDescription, ...] = (
@@ -72,10 +90,9 @@ SENSORS: tuple[DreameSF25SensorDescription, ...] = (
         translation_key="remaining_time",
         name="Remaining time",
         icon="mdi:timer-sand",
-        native_unit_of_measurement=UnitOfTime.MINUTES,
-        device_class=SensorDeviceClass.DURATION,
-        state_class=SensorStateClass.MEASUREMENT,
         prop=PROP_REMAINING_TIME,
+        value_fn=_fmt_remaining,
+        attrs_fn=lambda raw: {"minutes": int(raw)},
     ),
     DreameSF25SensorDescription(
         key="energy",
@@ -169,6 +186,19 @@ class DreameSF25Sensor(CoordinatorEntity[DreameSF25Coordinator], SensorEntity):
             return None
         try:
             return self.entity_description.value_fn(raw)
+        except (ValueError, TypeError):
+            return None
+
+    @property
+    def extra_state_attributes(self) -> dict | None:
+        desc = self.entity_description
+        if desc.attrs_fn is None or desc.prop is None:
+            return None
+        raw = (self.coordinator.data or {}).get(desc.prop)
+        if raw is None:
+            return None
+        try:
+            return desc.attrs_fn(raw)
         except (ValueError, TypeError):
             return None
 
