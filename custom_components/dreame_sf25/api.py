@@ -19,6 +19,7 @@ import urllib.request
 from typing import Any
 
 from .const import (
+    ACTION_WAKE,
     BASIC_AUTH,
     DEFAULT_TENANT,
     PORT,
@@ -194,26 +195,44 @@ class DreameSF25Client:
                     out[(e["siid"], e["piid"])] = e["value"]
         return out
 
-    def set_property(self, siid: int, piid: int, value: Any) -> Any:
-        """Escribe una propiedad (siid,piid)=value.
-
-        Verifica el codigo interno: el SF25 devuelve code 1 (y no aplica) cuando
-        esta en suspension (2.1=3). En ese caso lanzamos error para que HA lo muestre.
-        """
+    def _set_once(self, siid: int, piid: int, value: Any) -> tuple[Any, Any]:
+        """Escribe una vez; devuelve (entry, code) para (siid,piid)."""
         params = [{"did": f"{siid}.{piid}", "siid": siid, "piid": piid, "value": value}]
         result = self._send_rpc("set_properties", params)
         for entry in result or []:
             if entry.get("siid") == siid and entry.get("piid") == piid:
-                code = entry.get("code")
-                if code not in (0, None):
-                    raise DreameApiError(
-                        f"Escritura {siid}.{piid}={value} rechazada (code {code}). "
-                        "El aparato puede estar en suspension; despiertalo e intenta de nuevo."
-                    )
-                return entry
-        return result
+                return entry, entry.get("code")
+        return result, None
+
+    def wake(self) -> None:
+        """Despierta el aparato de suspension (accion MIoT 2/1)."""
+        try:
+            self.run_action(*ACTION_WAKE)
+        except DreameApiError:
+            pass  # la accion puede no devolver 'result'; el reintento lo confirmara
+
+    def set_property(self, siid: int, piid: int, value: Any) -> Any:
+        """Escribe una propiedad (siid,piid)=value.
+
+        El SF25 devuelve code 1 (y no aplica) cuando esta en suspension (2.1=3).
+        En ese caso ejecutamos la accion de despertar y reintentamos una vez.
+        Si aun asi falla, lanzamos error para que HA lo muestre.
+        """
+        entry, code = self._set_once(siid, piid, value)
+        if code not in (0, None):
+            self.wake()
+            time.sleep(1.5)
+            entry, code = self._set_once(siid, piid, value)
+        if code not in (0, None):
+            raise DreameApiError(
+                f"Escritura {siid}.{piid}={value} rechazada (code {code}) incluso tras despertar."
+            )
+        return entry
 
     def run_action(self, siid: int, aiid: int, in_args: list | None = None) -> Any:
-        """Ejecuta una accion MIoT."""
+        """Ejecuta una accion MIoT. Tolera respuestas sin 'result'."""
         params = {"did": str(self.did), "siid": siid, "aiid": aiid, "in": in_args or []}
-        return self._send_rpc("action", params)
+        try:
+            return self._send_rpc("action", params)
+        except DreameApiError:
+            return None

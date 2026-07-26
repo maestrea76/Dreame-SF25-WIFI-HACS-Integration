@@ -66,6 +66,10 @@ PROP_LID: Final = (6, 26)              # tapa: abierta/cerrada (binary_sensor)
 PROP_CHILD_LOCK: Final = (6, 10)       # bloqueo infantil (0=off, 1=on)
 PROP_SILENT_MODE: Final = (6, 17)      # modo silencio (0=off, 1=on)
 
+# Accion MIoT para DESPERTAR de suspension (confirmada): siid 2, aiid 1.
+# En suspension (2.1=3) las escrituras se ignoran (code 1); esta accion sí se honra.
+ACTION_WAKE: Final = (2, 1)
+
 # Sin mapear aun (candidatos a power/estado/modo/fallo):
 PROP_FW_VERSION: Final = (1, 4)
 PROP_SERIAL: Final = (1, 5)

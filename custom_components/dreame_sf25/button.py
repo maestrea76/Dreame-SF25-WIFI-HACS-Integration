@@ -14,16 +14,21 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import DreameSF25ConfigEntry
-from .const import DOMAIN, PROP_RUNNING, TARGET_MODEL
+from .const import ACTION_WAKE, DOMAIN, PROP_RUNNING, TARGET_MODEL
 from .coordinator import DreameSF25Coordinator
 
 
 @dataclass(frozen=True, kw_only=True)
 class DreameSF25ButtonDescription(ButtonEntityDescription):
-    """Descripcion de boton: escribe (siid,piid)=value al pulsarlo."""
+    """Descripcion de boton.
 
-    prop: tuple[int, int]
-    value: int
+    - prop + value: escribe (siid,piid)=value al pulsarlo.
+    - action: ejecuta una accion MIoT (siid, aiid) al pulsarlo.
+    """
+
+    prop: tuple[int, int] | None = None
+    value: int | None = None
+    action: tuple[int, int] | None = None
 
 
 BUTTONS: tuple[DreameSF25ButtonDescription, ...] = (
@@ -42,6 +47,13 @@ BUTTONS: tuple[DreameSF25ButtonDescription, ...] = (
         icon="mdi:play",
         prop=PROP_RUNNING,
         value=1,
+    ),
+    DreameSF25ButtonDescription(
+        key="wake",
+        translation_key="wake",
+        name="Wake",
+        icon="mdi:sleep-off",
+        action=ACTION_WAKE,
     ),
 )
 
@@ -79,8 +91,15 @@ class DreameSF25Button(CoordinatorEntity[DreameSF25Coordinator], ButtonEntity):
         )
 
     async def async_press(self) -> None:
-        siid, piid = self.entity_description.prop
-        await self.hass.async_add_executor_job(
-            self.coordinator.client.set_property, siid, piid, self.entity_description.value
-        )
+        desc = self.entity_description
+        if desc.action is not None:
+            siid, aiid = desc.action
+            await self.hass.async_add_executor_job(
+                self.coordinator.client.run_action, siid, aiid
+            )
+        else:
+            siid, piid = desc.prop
+            await self.hass.async_add_executor_job(
+                self.coordinator.client.set_property, siid, piid, desc.value
+            )
         await self.coordinator.async_request_refresh()

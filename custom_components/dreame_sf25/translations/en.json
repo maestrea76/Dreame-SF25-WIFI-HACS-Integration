@@ -27,7 +27,8 @@
     },
     "button": {
       "pause": { "name": "Pause" },
-      "resume": { "name": "Resume" }
+      "resume": { "name": "Resume" },
+      "wake": { "name": "Wake" }
     },
     "select": {
       "program": {
