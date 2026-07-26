@@ -137,6 +137,7 @@ MENU = """
   7) [!] INICIAR AUTOLIMPIEZA -> set 2.3 = 2
   8) [!] PARAR/CANCELar -> set 2.3 = -1
   w) DESPERTAR de suspension (diagnostico, NO arranca el aparato)
+  l) Descubrir comando ABRIR TAPA (prueba set 6.26 y acciones del servicio 6)
   q) Salir
 =====================================================================
 Elige opcion: """
@@ -211,6 +212,50 @@ def wake_test(cloud, did):
     print("o buscar una propiedad de 'encendido'. Pega este resultado completo.")
 
 
+def find_lid_open(cloud, did):
+    """Descubre el comando para ABRIR LA TAPA (6.26 pasa a 1)."""
+    if str(_read_one(cloud, did, 2, 1)) == "3":
+        print("Aparato en suspension; despierto con action(2,1)...")
+        run_action(cloud, did, 2, 1)
+        time.sleep(2)
+    lid = _read_one(cloud, did, 6, 26)
+    print(f"Tapa (6.26) actual = {lid!r}")
+    if str(lid) == "1":
+        print("La tapa ya consta ABIERTA. Cierrala fisicamente y reintenta para detectar la apertura.")
+        return
+
+    def opened():
+        return str(_read_one(cloud, did, 6, 26)) == "1"
+
+    # 1) escritura directa de la propiedad de estado
+    print("\n[1] set 6.26 = 1")
+    try:
+        set_property(cloud, did, 6, 26, 1)
+    except Exception as e:
+        print("  err:", e)
+    time.sleep(3)
+    if opened():
+        print("  -> ABRE con set_property 6.26 = 1")
+        return
+
+    # 2) probar acciones del servicio 6 (donde vive la tapa), una a una
+    print("\n[2] Probando acciones del servicio 6 (aiid 1..6):")
+    for aiid in range(1, 7):
+        ans = input(f"   Ejecutar action(6,{aiid})? (s=si / n=saltar / q=parar): ").strip().lower()
+        if ans == "q":
+            break
+        if ans != "s":
+            continue
+        run_action(cloud, did, 6, aiid)
+        time.sleep(3)
+        if opened():
+            print(f"  -> ABRE con action(6,{aiid})")
+            return
+
+    print("\nNo detectado (ni set 6.26 ni action 6.1..6). Puede estar en otro siid/aiid;")
+    print("dime si en la app hay boton de abrir tapa y probamos mas candidatos.")
+
+
 def validate_safe(cloud, did):
     """Alterna el modo silencio (6.17) probando int y booleano. Inofensivo."""
     vals = snapshot(cloud, did, "ANTES")
@@ -263,6 +308,8 @@ def main():
             validate_safe(cloud, did)
         elif choice == "w":
             wake_test(cloud, did)
+        elif choice == "l":
+            find_lid_open(cloud, did)
         elif choice == "2":
             try:
                 siid = int(input("  siid: "))
