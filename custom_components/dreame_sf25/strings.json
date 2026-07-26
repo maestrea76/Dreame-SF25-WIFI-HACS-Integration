@@ -1,0 +1,63 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Dreame SF25",
+        "description": "Introduce las credenciales de tu cuenta Dreamehome. Si entras con Google, primero crea una contraseña con 'He olvidado mi contraseña' en la app.",
+        "data": {
+          "email": "Email",
+          "password": "Contraseña",
+          "region": "Región"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Credenciales incorrectas.",
+      "cannot_connect": "No se pudo conectar con la nube de Dreame o no se encontró el dispositivo.",
+      "unknown": "Error inesperado."
+    },
+    "abort": {
+      "already_configured": "Este dispositivo ya está configurado."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "running": { "name": "En marcha" },
+      "lid": { "name": "Tapa" }
+    },
+    "button": {
+      "pause": { "name": "Pausar" },
+      "resume": { "name": "Reanudar" }
+    },
+    "select": {
+      "program": {
+        "name": "Programa",
+        "state": {
+          "idle": "Parado",
+          "cycle": "Ciclo",
+          "self_clean": "Autolimpieza"
+        }
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "Estado",
+        "state": {
+          "working": "Trabajando",
+          "standby": "En espera",
+          "suspended": "Suspensión"
+        }
+      },
+      "remaining_time": { "name": "Tiempo restante" },
+      "energy": { "name": "Energía" },
+      "carbon_filter_pct": { "name": "Vida del filtro de carbón" },
+      "carbon_filter_days": { "name": "Filtro de carbón restante" },
+      "temperature": { "name": "Temperatura" },
+      "humidity": { "name": "Humedad" }
+    },
+    "switch": {
+      "child_lock": { "name": "Bloqueo infantil" },
+      "silent_mode": { "name": "Modo silencio" }
+    }
+  }
+}

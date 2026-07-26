@@ -1,0 +1,63 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Dreame SF25",
+        "description": "Enter your Dreamehome account credentials. If you sign in with Google, first set a password via 'Forgot password' in the app.",
+        "data": {
+          "email": "Email",
+          "password": "Password",
+          "region": "Region"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid credentials.",
+      "cannot_connect": "Could not connect to the Dreame cloud or the device was not found.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This device is already configured."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "running": { "name": "Running" },
+      "lid": { "name": "Lid" }
+    },
+    "button": {
+      "pause": { "name": "Pause" },
+      "resume": { "name": "Resume" }
+    },
+    "select": {
+      "program": {
+        "name": "Program",
+        "state": {
+          "idle": "Stopped",
+          "cycle": "Cycle",
+          "self_clean": "Self-clean"
+        }
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "Status",
+        "state": {
+          "working": "Working",
+          "standby": "Standby",
+          "suspended": "Suspended"
+        }
+      },
+      "remaining_time": { "name": "Remaining time" },
+      "energy": { "name": "Energy" },
+      "carbon_filter_pct": { "name": "Carbon filter life" },
+      "carbon_filter_days": { "name": "Carbon filter remaining" },
+      "temperature": { "name": "Temperature" },
+      "humidity": { "name": "Humidity" }
+    },
+    "switch": {
+      "child_lock": { "name": "Child lock" },
+      "silent_mode": { "name": "Silent mode" }
+    }
+  }
+}

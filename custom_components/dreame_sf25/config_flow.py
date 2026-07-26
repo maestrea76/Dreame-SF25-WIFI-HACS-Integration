@@ -1,0 +1,64 @@
+"""Config flow para Dreame SF25."""
+from __future__ import annotations
+
+import logging
+from typing import Any
+
+import voluptuous as vol
+
+from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
+
+from .api import DreameApiError, DreameAuthError, DreameSF25Client
+from .const import CONF_DID, CONF_REGION, DEFAULT_REGION, DOMAIN, REGIONS
+
+_LOGGER = logging.getLogger(__name__)
+
+
+class DreameSF25ConfigFlow(ConfigFlow, domain=DOMAIN):
+    """Flujo de configuracion (email + contrasena + region)."""
+
+    VERSION = 1
+
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            client = DreameSF25Client(
+                user_input[CONF_EMAIL],
+                user_input[CONF_PASSWORD],
+                user_input[CONF_REGION],
+            )
+            try:
+                device = await self.hass.async_add_executor_job(client.resolve_device)
+            except DreameAuthError:
+                errors["base"] = "invalid_auth"
+            except DreameApiError:
+                errors["base"] = "cannot_connect"
+            except Exception:  # noqa: BLE001
+                _LOGGER.exception("Error inesperado en config flow")
+                errors["base"] = "unknown"
+            else:
+                did = str(device.get("did"))
+                await self.async_set_unique_id(did)
+                self._abort_if_unique_id_configured()
+                name = device.get("customName") or device.get("deviceInfo", {}).get(
+                    "displayName", "Dreame SF25"
+                )
+                return self.async_create_entry(
+                    title=name,
+                    data={
+                        CONF_EMAIL: user_input[CONF_EMAIL],
+                        CONF_PASSWORD: user_input[CONF_PASSWORD],
+                        CONF_REGION: user_input[CONF_REGION],
+                        CONF_DID: did,
+                    },
+                )
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_EMAIL): str,
+                vol.Required(CONF_PASSWORD): str,
+                vol.Required(CONF_REGION, default=DEFAULT_REGION): vol.In(REGIONS),
+            }
+        )
+        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)

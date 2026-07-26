@@ -1,0 +1,219 @@
+"""Cliente (sincrono, solo stdlib) para la nube de Dreame — dispositivo SF25.
+
+Ingenieria inversa del protocolo de la app Dreamehome. Se usa desde el
+coordinator mediante hass.async_add_executor_job para no bloquear el loop.
+
+Lectura/escritura de estado via RPC MIoT (nube -> dispositivo) 'sendCommand',
+porque este MCU (dreame.fwd.u2527) no cachea propiedades en la nube.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import logging
+import ssl
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from typing import Any
+
+from .const import (
+    BASIC_AUTH,
+    DEFAULT_TENANT,
+    PORT,
+    PWD_SALT,
+    TARGET_MODEL,
+    USER_AGENT,
+)
+
+_LOGGER = logging.getLogger(__name__)
+
+_SSL_CTX = ssl.create_default_context()
+_SSL_CTX.check_hostname = False
+_SSL_CTX.verify_mode = ssl.CERT_NONE
+
+
+class DreameAuthError(Exception):
+    """Fallo de autenticacion (credenciales/region)."""
+
+
+class DreameApiError(Exception):
+    """Fallo generico de la API."""
+
+
+class DreameSF25Client:
+    """Cliente minimo para el SF25 en la nube de Dreame."""
+
+    def __init__(self, email: str, password: str, region: str = "eu") -> None:
+        self._email = email
+        self._password = password
+        self._region = region
+        self._access_token: str | None = None
+        self._refresh_token: str | None = None
+        self._tenant_id: str = DEFAULT_TENANT
+        self._token_expire: float = 0.0
+        self._rpc_id: int = 1
+        # rellenados tras localizar el dispositivo:
+        self.did: str | None = None
+        self.bind_host: str | None = None
+        self.model: str | None = None
+
+    # ------------------------------------------------------------------ HTTP
+    def _base_url(self) -> str:
+        return f"https://{self._region}.iot.dreame.tech:{PORT}"
+
+    def _post(self, path: str, headers: dict, data: bytes, timeout: int = 15) -> dict:
+        url = f"{self._base_url()}{path}"
+        req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=timeout, context=_SSL_CTX) as resp:
+                raw = resp.read().decode("utf-8", "replace")
+        except urllib.error.HTTPError as e:
+            raw = e.read().decode("utf-8", "replace")
+            if e.code == 401:
+                raise DreameAuthError(raw) from e
+            raise DreameApiError(f"HTTP {e.code}: {raw[:200]}") from e
+        except Exception as e:  # noqa: BLE001
+            raise DreameApiError(str(e)) from e
+        try:
+            return json.loads(raw)
+        except ValueError as e:
+            raise DreameApiError(f"Respuesta no-JSON: {raw[:200]}") from e
+
+    def _auth_headers(self) -> dict:
+        return {
+            "Accept": "*/*",
+            "Content-Type": "application/json",
+            "User-Agent": USER_AGENT,
+            "Authorization": BASIC_AUTH,
+            "Tenant-Id": self._tenant_id or DEFAULT_TENANT,
+            "Dreame-Auth": self._access_token or "",
+        }
+
+    def _api(self, path: str, params: Any | None = None) -> dict:
+        data = json.dumps(params, separators=(",", ":")).encode("utf-8") if params is not None else b""
+        return self._post(path, self._auth_headers(), data)
+
+    # ------------------------------------------------------------------ Auth
+    def login(self) -> None:
+        """Login por usuario/contrasena (grant password)."""
+        pwd_hash = hashlib.md5((self._password + PWD_SALT).encode("utf-8")).hexdigest()
+        body = (
+            "platform=IOS&scope=all&grant_type=password"
+            f"&username={urllib.parse.quote(self._email)}"
+            f"&password={pwd_hash}&type=account"
+        )
+        self._do_token(body)
+
+    def _refresh(self) -> None:
+        body = (
+            "platform=IOS&scope=all&grant_type=refresh_token"
+            f"&refresh_token={self._refresh_token}"
+        )
+        self._do_token(body)
+
+    def _do_token(self, body: str) -> None:
+        headers = {
+            "Accept": "*/*",
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": USER_AGENT,
+            "Authorization": BASIC_AUTH,
+            "Tenant-Id": DEFAULT_TENANT,
+        }
+        data = self._post("/dreame-auth/oauth/token", headers, body.encode("utf-8"))
+        if "access_token" not in data:
+            raise DreameAuthError(json.dumps(data)[:200])
+        self._access_token = data["access_token"]
+        self._refresh_token = data.get("refresh_token", self._refresh_token)
+        self._tenant_id = data.get("tenant_id", DEFAULT_TENANT)
+        self._token_expire = time.time() + int(data.get("expires_in", 3600)) - 120
+
+    def _ensure_token(self) -> None:
+        if not self._access_token:
+            self.login()
+        elif time.time() > self._token_expire:
+            try:
+                self._refresh()
+            except DreameAuthError:
+                self.login()
+
+    # -------------------------------------------------------------- Devices
+    def list_devices(self) -> list[dict]:
+        self._ensure_token()
+        resp = self._api("/dreame-user-iot/iotuserbind/device/listV2")
+        if resp.get("code") == 0 and "data" in resp:
+            return list(resp["data"].get("page", {}).get("records", []))
+        raise DreameApiError(f"listV2: {json.dumps(resp)[:200]}")
+
+    def resolve_device(self, did: str | None = None) -> dict:
+        """Localiza el SF25 (o el did dado) y cachea did/bind_host/model."""
+        for d in self.list_devices():
+            model = d.get("model") or ""
+            match = (did is not None and str(d.get("did")) == str(did)) or (
+                did is None and (model == TARGET_MODEL or "u2527" in model)
+            )
+            if match:
+                self.did = str(d.get("did"))
+                self.bind_host = d.get("bindDomain")
+                self.model = model
+                return d
+        raise DreameApiError("No se encontro el dispositivo SF25 en la cuenta")
+
+    # ------------------------------------------------------------------ RPC
+    def _rpc_path(self) -> str:
+        host = f"-{self.bind_host.split('.')[0]}" if self.bind_host else ""
+        return f"/dreame-iot-com{host}/device/sendCommand"
+
+    def _send_rpc(self, method: str, params: Any) -> Any:
+        self._ensure_token()
+        self._rpc_id += 1
+        body = {
+            "did": str(self.did),
+            "id": self._rpc_id,
+            "data": {"did": str(self.did), "id": self._rpc_id, "method": method, "params": params},
+        }
+        resp = self._api(self._rpc_path(), body)
+        if resp and isinstance(resp.get("data"), dict) and "result" in resp["data"]:
+            return resp["data"]["result"]
+        # 'success' sin data -> reintento unico
+        if resp and resp.get("success") is True:
+            resp = self._api(self._rpc_path(), body)
+            if resp and isinstance(resp.get("data"), dict):
+                return resp["data"].get("result")
+        raise DreameApiError(f"RPC {method} sin resultado: {json.dumps(resp)[:200]}")
+
+    def get_properties(self, props: list[tuple[int, int]]) -> dict[tuple[int, int], Any]:
+        """Lee propiedades (siid,piid) -> {(siid,piid): value} para code 0."""
+        keys = [{"did": f"{s}.{p}", "siid": s, "piid": p} for s, p in props]
+        out: dict[tuple[int, int], Any] = {}
+        for i in range(0, len(keys), 15):
+            result = self._send_rpc("get_properties", keys[i:i + 15])
+            for e in result or []:
+                if e.get("code") == 0 and "value" in e:
+                    out[(e["siid"], e["piid"])] = e["value"]
+        return out
+
+    def set_property(self, siid: int, piid: int, value: Any) -> Any:
+        """Escribe una propiedad (siid,piid)=value.
+
+        Verifica el codigo interno: el SF25 devuelve code 1 (y no aplica) cuando
+        esta en suspension (2.1=3). En ese caso lanzamos error para que HA lo muestre.
+        """
+        params = [{"did": f"{siid}.{piid}", "siid": siid, "piid": piid, "value": value}]
+        result = self._send_rpc("set_properties", params)
+        for entry in result or []:
+            if entry.get("siid") == siid and entry.get("piid") == piid:
+                code = entry.get("code")
+                if code not in (0, None):
+                    raise DreameApiError(
+                        f"Escritura {siid}.{piid}={value} rechazada (code {code}). "
+                        "El aparato puede estar en suspension; despiertalo e intenta de nuevo."
+                    )
+                return entry
+        return result
+
+    def run_action(self, siid: int, aiid: int, in_args: list | None = None) -> Any:
+        """Ejecuta una accion MIoT."""
+        params = {"did": str(self.did), "siid": siid, "aiid": aiid, "in": in_args or []}
+        return self._send_rpc("action", params)

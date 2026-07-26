@@ -1,0 +1,53 @@
+"""Integracion Dreame SF25 Waste Disposer (nube Dreamehome, ingenieria inversa)."""
+from __future__ import annotations
+
+import logging
+
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, Platform
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+
+from .api import DreameApiError, DreameAuthError, DreameSF25Client
+from .const import CONF_DID, CONF_REGION, DEFAULT_REGION, DOMAIN
+from .coordinator import DreameSF25Coordinator
+
+_LOGGER = logging.getLogger(__name__)
+
+PLATFORMS: list[Platform] = [
+    Platform.BINARY_SENSOR,
+    Platform.BUTTON,
+    Platform.SELECT,
+    Platform.SENSOR,
+    Platform.SWITCH,
+]
+
+type DreameSF25ConfigEntry = ConfigEntry[DreameSF25Coordinator]
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: DreameSF25ConfigEntry) -> bool:
+    """Configura una entrada."""
+    client = DreameSF25Client(
+        entry.data[CONF_EMAIL],
+        entry.data[CONF_PASSWORD],
+        entry.data.get(CONF_REGION, DEFAULT_REGION),
+    )
+
+    try:
+        await hass.async_add_executor_job(client.resolve_device, entry.data.get(CONF_DID))
+    except DreameAuthError as err:
+        raise ConfigEntryAuthFailed(str(err)) from err
+    except DreameApiError as err:
+        raise ConfigEntryNotReady(str(err)) from err
+
+    coordinator = DreameSF25Coordinator(hass, entry, client)
+    await coordinator.async_config_entry_first_refresh()
+
+    entry.runtime_data = coordinator
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: DreameSF25ConfigEntry) -> bool:
+    """Descarga una entrada."""
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)

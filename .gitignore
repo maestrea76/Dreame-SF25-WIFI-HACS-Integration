@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Volcados y logs de las herramientas de RE (pueden contener datos del dispositivo)
+dump_*.json
+monitor_*.log
+
+# Credenciales / entorno
+.env
+*.secret
+
+# SO / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
