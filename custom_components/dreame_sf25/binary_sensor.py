@@ -87,7 +87,7 @@ class DreameSF25BinarySensor(CoordinatorEntity[DreameSF25Coordinator], BinarySen
         if raw is None:
             return None
         try:
-            return bool(int(raw))
+            return self.entity_description.is_on_fn(raw)
         except (ValueError, TypeError):
             return None
 
