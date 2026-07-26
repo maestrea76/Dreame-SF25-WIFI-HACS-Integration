@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Genera el icono PNG del SF25 (sin dependencias externas).
+"""Genera el icono PNG del Dreame SF25 (sin dependencias externas).
 
-Dibuja el mismo diseno que icon.svg (insignia verde + hoja de compost) con
-supersampling y lo exporta a PNG RGBA transparente en 256 y 512 px.
+Dibuja una representacion del aparato: cuerpo vertical blanco, tapa cuadrada
+abierta e inclinada con ventana redonda, y la abertura circular superior.
+Exporta PNG RGBA en 256 y 512 px (supersampling).
 
 Salida:
   brands/dreame_sf25/icon.png     (256x256)
@@ -16,82 +17,104 @@ import os
 import struct
 import zlib
 
-S = 1024  # resolucion de render (supersampling)
+S = 1024  # resolucion de render (supersampling desde 256)
+K = S / 256.0
+
+# --- colores ---
+BG_TOP = (0x3F, 0xA6, 0x6A)
+BG_BOT = (0x2B, 0x7D, 0x4D)
+WHITE = (0xFB, 0xFD, 0xFE)
+BORDER = (0xD5, 0xDB, 0xDF)
+RIM = (0xC9, 0xD0, 0xD5)
+HOLE = (0x33, 0x38, 0x3D)
+WINDOW = (0xEC, 0xF1, 0xF4)
 
 
 def _lerp(a, b, t):
-    return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))
+    return (round(a[0] + (b[0] - a[0]) * t),
+            round(a[1] + (b[1] - a[1]) * t),
+            round(a[2] + (b[2] - a[2]) * t))
 
 
-def _rounded_rect(x, y, w, h, r):
-    # coverage 0/1 de un rectangulo redondeado [0,w]x[0,h] con radio r
-    if x < 0 or y < 0 or x > w or y > h:
+def _rrect(px, py, cx, cy, hw, hh, r, ang=0.0):
+    """Dentro de un rect redondeado centrado en (cx,cy) rotado ang grados."""
+    dx = px - cx
+    dy = py - cy
+    if ang:
+        a = math.radians(ang)
+        c, s = math.cos(a), math.sin(a)
+        dx, dy = dx * c + dy * s, -dx * s + dy * c
+    dx, dy = abs(dx), abs(dy)
+    if dx > hw or dy > hh:
         return False
-    rx = min(x, w - x)
-    ry = min(y, h - y)
-    if rx >= r or ry >= r:
+    ox = dx - (hw - r)
+    oy = dy - (hh - r)
+    if ox <= 0 or oy <= 0:
         return True
-    dx = r - rx
-    dy = r - ry
-    return dx * dx + dy * dy <= r * r
+    return ox * ox + oy * oy <= r * r
 
 
-def render(size: int) -> bytes:
-    scale = S / 256.0
-    # colores
-    top = (0x3F, 0xA6, 0x6A)
-    bot = (0x2B, 0x7D, 0x4D)
-    leaf_col = (0xEA, 0xFF, 0xF0)
-    rib_col = (0x2B, 0x7D, 0x4D)
+def _circle(px, py, cx, cy, r):
+    return (px - cx) ** 2 + (py - cy) ** 2 <= r * r
 
-    # circulos de la hoja (en coords 0..256)
-    c1 = (88.0, 168.0, 96.0)
-    c2 = (168.0, 88.0, 96.0)
-    # nervio central: segmento (73,73)-(183,183)
-    rib_a = (73.0, 73.0)
-    rib_b = (183.0, 183.0)
 
-    def in_circle(px, py, c):
-        return (px - c[0]) ** 2 + (py - c[1]) ** 2 <= c[2] ** 2
+def _ellipse(px, py, cx, cy, rx, ry):
+    return ((px - cx) / rx) ** 2 + ((py - cy) / ry) ** 2 <= 1.0
 
-    def dist_seg(px, py, a, b):
-        vx, vy = b[0] - a[0], b[1] - a[1]
-        wx, wy = px - a[0], py - a[1]
-        t = (wx * vx + wy * vy) / (vx * vx + vy * vy)
-        t = max(0.0, min(1.0, t))
-        cx, cy = a[0] + t * vx, a[1] + t * vy
-        return math.hypot(px - cx, py - cy)
 
-    # render supersampled -> RGBA
+def _pixel(px, py):
+    """Color RGBA (o None si transparente) del punto (px,py) en coords 0..256."""
+    if not _rrect(px, py, 128, 128, 128, 128, 52):
+        return None
+    col = _lerp(BG_TOP, BG_BOT, py / 256.0)  # fondo
+
+    # tapa abierta e inclinada (centro 142,66, girada -16 grados)
+    lc = (142.0, 66.0)
+    if _rrect(px, py, lc[0], lc[1], 40, 40, 13, -16):
+        col = BORDER
+    if _rrect(px, py, lc[0], lc[1], 38, 38, 12, -16):
+        col = WHITE
+        # ventana redonda de la tapa
+        if _circle(px, py, lc[0], lc[1], 27):
+            col = RIM
+        if _circle(px, py, lc[0], lc[1], 19):
+            col = WINDOW
+
+    # bisagra
+    if _rrect(px, py, 124, 108, 12, 10, 4):
+        col = RIM
+
+    # cuerpo del aparato (rect redondeado vertical)
+    if _rrect(px, py, 128, 156, 44, 44, 16):
+        col = WHITE
+
+    # abertura circular superior (elipse en perspectiva)
+    if _ellipse(px, py, 128, 112, 33, 14):
+        col = RIM
+    if _ellipse(px, py, 128, 112, 23, 10):
+        col = HOLE
+
+    return (col[0], col[1], col[2], 255)
+
+
+def render_hi() -> bytearray:
     hi = bytearray(S * S * 4)
     for j in range(S):
-        py = (j + 0.5) / scale
+        py = (j + 0.5) / K
         row = j * S * 4
-        # gradiente vertical del fondo
-        grad = _lerp(top, bot, py / 256.0)
         for i in range(S):
-            px = (i + 0.5) / scale
+            c = _pixel((i + 0.5) / K, py)
+            if c is None:
+                continue
             o = row + i * 4
-            if not _rounded_rect(px, py, 256.0, 256.0, 52.0):
-                continue  # transparente
-            # fondo
-            r, g, b = grad
-            a = 255
-            # hoja = interseccion de los dos circulos
-            if in_circle(px, py, c1) and in_circle(px, py, c2):
-                if dist_seg(px, py, rib_a, rib_b) <= 3.0:
-                    r, g, b = rib_col
-                else:
-                    r, g, b = leaf_col
-            hi[o] = r
-            hi[o + 1] = g
-            hi[o + 2] = b
-            hi[o + 3] = a
+            hi[o] = c[0]; hi[o + 1] = c[1]; hi[o + 2] = c[2]; hi[o + 3] = c[3]
+    return hi
 
-    # downsample por bloques promediando (RGBA recto)
+
+def downsample(hi: bytearray, size: int) -> bytes:
     block = S // size
-    out = bytearray(size * size * 4)
     n = block * block
+    out = bytearray(size * size * 4)
     for oy in range(size):
         for ox in range(size):
             sr = sg = sb = sa = 0
@@ -101,10 +124,8 @@ def render(size: int) -> bytes:
                     p = base + bx * 4
                     sr += hi[p]; sg += hi[p + 1]; sb += hi[p + 2]; sa += hi[p + 3]
             oo = (oy * size + ox) * 4
-            out[oo] = sr // n
-            out[oo + 1] = sg // n
-            out[oo + 2] = sb // n
-            out[oo + 3] = sa // n
+            out[oo] = sr // n; out[oo + 1] = sg // n
+            out[oo + 2] = sb // n; out[oo + 3] = sa // n
     return _png(bytes(out), size, size)
 
 
@@ -113,21 +134,23 @@ def _png(rgba: bytes, w: int, h: int) -> bytes:
         c = tag + data
         return struct.pack(">I", len(data)) + c + struct.pack(">I", zlib.crc32(c) & 0xFFFFFFFF)
 
-    raw = bytearray()
     stride = w * 4
+    raw = bytearray()
     for y in range(h):
-        raw.append(0)  # filtro None
+        raw.append(0)
         raw += rgba[y * stride:(y + 1) * stride]
-    sig = b"\x89PNG\r\n\x1a\n"
-    ihdr = struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0)
-    return sig + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b"")
+    return (b"\x89PNG\r\n\x1a\n"
+            + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(bytes(raw), 9))
+            + chunk(b"IEND", b""))
 
 
 def main():
     os.makedirs("brands/dreame_sf25", exist_ok=True)
+    hi = render_hi()
     for size, name in [(256, "brands/dreame_sf25/icon.png"), (512, "brands/dreame_sf25/icon@2x.png")]:
         with open(name, "wb") as f:
-            f.write(render(size))
+            f.write(downsample(hi, size))
         print("OK", name, f"{size}x{size}")
 
 

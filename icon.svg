@@ -4,11 +4,20 @@
       <stop offset="0" stop-color="#3fa66a"/>
       <stop offset="1" stop-color="#2b7d4d"/>
     </linearGradient>
-    <clipPath id="leaf"><circle cx="88" cy="168" r="96"/></clipPath>
   </defs>
   <rect x="0" y="0" width="256" height="256" rx="52" fill="url(#bg)"/>
-  <g clip-path="url(#leaf)">
-    <circle cx="168" cy="88" r="96" fill="#eafff0"/>
-    <line x1="73" y1="73" x2="183" y2="183" stroke="#2b7d4d" stroke-width="6" stroke-linecap="round"/>
+  <!-- tapa abierta e inclinada, con ventana redonda -->
+  <g transform="rotate(-16 142 66)">
+    <rect x="102" y="26" width="80" height="80" rx="13" fill="#d5dbdf"/>
+    <rect x="104" y="28" width="76" height="76" rx="12" fill="#fbfdfe"/>
+    <circle cx="142" cy="66" r="27" fill="#c9d0d5"/>
+    <circle cx="142" cy="66" r="19" fill="#ecf1f4"/>
   </g>
+  <!-- bisagra -->
+  <rect x="112" y="98" width="24" height="20" rx="4" fill="#c9d0d5"/>
+  <!-- cuerpo del aparato -->
+  <rect x="84" y="112" width="88" height="88" rx="16" fill="#fbfdfe"/>
+  <!-- abertura circular superior -->
+  <ellipse cx="128" cy="112" rx="33" ry="14" fill="#c9d0d5"/>
+  <ellipse cx="128" cy="112" rx="23" ry="10" fill="#33383d"/>
 </svg>
