@@ -21,6 +21,7 @@ Requiere scan_dreame.py en la misma carpeta (reutiliza su cliente).
 
 import os
 import sys
+import time
 import getpass
 
 import scan_dreame as S
@@ -135,6 +136,7 @@ MENU = """
   6) [!] INICIAR CICLO normal -> set 2.3 = 0
   7) [!] INICIAR AUTOLIMPIEZA -> set 2.3 = 2
   8) [!] PARAR/CANCELar -> set 2.3 = -1
+  w) DESPERTAR de suspension (diagnostico, NO arranca el aparato)
   q) Salir
 =====================================================================
 Elige opcion: """
@@ -160,6 +162,53 @@ def _try_set(cloud, did, siid, piid, value, target):
         if got is not None and str(got) == str(target):
             return True
     return False
+
+
+def wake_test(cloud, did):
+    """Intenta sacar al aparato de suspension (2.1=3) SIN arrancarlo."""
+    st = _read_one(cloud, did, 2, 1)
+    print(f"\nEstado actual 2.1 = {st!r}")
+    if str(st) != "3":
+        print("El aparato NO esta en suspension (2.1 != 3). Ponlo en suspension y reintenta.")
+        return
+
+    def awake():
+        return str(_read_one(cloud, did, 2, 1)) != "3"
+
+    # A) escribir el estado directamente a 'en espera' (2.1 = 2)
+    print("\n[A] set 2.1 = 2 (forzar 'en espera')")
+    try:
+        set_property(cloud, did, 2, 1, 2)
+    except Exception as e:
+        print("  err:", e)
+    time.sleep(3)
+    if awake():
+        print("  -> DESPERTO con set 2.1 = 2  (comando de despertar encontrado)")
+        return
+
+    # B) doble escritura benigna (re-enviar 6.17 a su valor actual): despertar + aplicar
+    cur = _read_one(cloud, did, 6, 17)
+    if cur is not None:
+        print("\n[B] doble set 6.17 al valor actual (despertar y reintentar)")
+        set_property(cloud, did, 6, 17, int(cur))
+        time.sleep(3)
+        set_property(cloud, did, 6, 17, int(cur))
+        time.sleep(2)
+        if awake():
+            print("  -> DESPERTO con doble escritura benigna (patron: 1er set despierta, 2o aplica)")
+            return
+
+    # C) sondeo de lecturas 20s por si el trafico lo despierta
+    print("\n[C] sondeando lecturas 20s...")
+    for i in range(10):
+        time.sleep(2)
+        if awake():
+            print(f"  -> DESPERTO tras ~{(i + 1) * 2}s de lecturas (keep-alive)")
+            return
+
+    print("\nNinguna via (A/B/C) desperto el aparato.")
+    print("Siguiente paso: probar ACCIONES MIoT (menu opcion 3, p.ej. siid 2 aiid 1..4)")
+    print("o buscar una propiedad de 'encendido'. Pega este resultado completo.")
 
 
 def validate_safe(cloud, did):
@@ -212,6 +261,8 @@ def main():
             snapshot(cloud, did)
         elif choice == "1":
             validate_safe(cloud, did)
+        elif choice == "w":
+            wake_test(cloud, did)
         elif choice == "2":
             try:
                 siid = int(input("  siid: "))
