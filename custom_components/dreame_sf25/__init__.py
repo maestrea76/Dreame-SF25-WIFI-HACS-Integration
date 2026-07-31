@@ -42,6 +42,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: DreameSF25ConfigEntry) -
 
     coordinator = DreameSF25Coordinator(hass, entry, client)
     await coordinator.async_config_entry_first_refresh()
+    # push en tiempo real; si falla, el coordinator sigue sondeando
+    await coordinator.async_start_push()
 
     entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -50,4 +52,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: DreameSF25ConfigEntry) -
 
 async def async_unload_entry(hass: HomeAssistant, entry: DreameSF25ConfigEntry) -> bool:
     """Descarga una entrada."""
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unloaded:
+        await entry.runtime_data.async_stop_push()
+    return unloaded

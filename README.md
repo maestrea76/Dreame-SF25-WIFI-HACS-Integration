@@ -36,6 +36,14 @@ Its state is read through a **MIoT `sendCommand` RPC** (cloud → device) agains
 Dreame API (`https://<region>.iot.dreame.tech:13267`), authenticating with your
 Dreamehome account credentials (OAuth2, `password` grant).
 
+Since v0.2.0 the integration also subscribes to Dreame's **MQTT broker** (the same
+channel the app uses), so state changes arrive **instantly** instead of waiting for
+a poll — a lid opened for a few seconds is no longer missed. Polling stays as a
+safety net (every 5 min while push is alive, 30 s if it drops).
+
+> The device is **cloud-only**: it has no open local ports and does not answer the
+> miIO handshake, so local (LAN) control is not possible.
+
 ## Installation
 
 ### Via HACS (recommended)
@@ -139,6 +147,14 @@ El SF25 es un dispositivo `COMM_MCU` que **no cachea propiedades MIoT en la nube
 Su estado se lee mediante un **RPC MIoT `sendCommand`** (nube → dispositivo) contra
 la API de Dreame (`https://<región>.iot.dreame.tech:13267`), autenticando con las
 credenciales de la cuenta Dreamehome (OAuth2, grant `password`).
+
+Desde la v0.2.0 la integración además se suscribe al **broker MQTT** de Dreame (el
+mismo canal que usa la app), así que los cambios llegan **al instante** en vez de
+esperar al sondeo: una tapa abierta unos segundos ya no se pierde. El sondeo queda
+como red de seguridad (cada 5 min con el push vivo, 30 s si se cae).
+
+> El aparato es **solo nube**: no tiene puertos locales abiertos ni responde al
+> handshake miIO, por lo que el control local (LAN) no es posible.
 
 ## Instalación
 

@@ -55,10 +55,30 @@ class DreameSF25Client:
         self._tenant_id: str = DEFAULT_TENANT
         self._token_expire: float = 0.0
         self._rpc_id: int = 1
+        self._uid: str | None = None          # uid de la cuenta (login)
         # rellenados tras localizar el dispositivo:
         self.did: str | None = None
         self.bind_host: str | None = None
         self.model: str | None = None
+        self.master_uid: str | None = None    # masterUid del dispositivo (topic MQTT)
+
+    # ------------------------------------------------------------ Propiedades
+    @property
+    def uid(self) -> str | None:
+        """uid de la cuenta (usuario MQTT)."""
+        return self._uid
+
+    @property
+    def region(self) -> str:
+        return self._region
+
+    def mqtt_credentials(self) -> tuple[str, str]:
+        """(usuario, contrasena) validos para el broker MQTT.
+
+        Refresca el token si hiciera falta, porque el broker lo rechaza caducado.
+        """
+        self._ensure_token()
+        return self._uid or "", self._access_token or ""
 
     # ------------------------------------------------------------------ HTTP
     def _base_url(self) -> str:
@@ -128,6 +148,7 @@ class DreameSF25Client:
         self._access_token = data["access_token"]
         self._refresh_token = data.get("refresh_token", self._refresh_token)
         self._tenant_id = data.get("tenant_id", DEFAULT_TENANT)
+        self._uid = data.get("uid", self._uid)
         self._token_expire = time.time() + int(data.get("expires_in", 3600)) - 120
 
     def _ensure_token(self) -> None:
@@ -158,6 +179,7 @@ class DreameSF25Client:
                 self.did = str(d.get("did"))
                 self.bind_host = d.get("bindDomain")
                 self.model = model
+                self.master_uid = d.get("masterUid")
                 return d
         raise DreameApiError("No se encontro el dispositivo SF25 en la cuenta")
 

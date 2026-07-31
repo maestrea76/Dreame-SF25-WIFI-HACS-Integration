@@ -15,8 +15,11 @@ REGIONS: Final = ["eu", "cn", "us", "ru", "sg", "kr"]
 # Modelo objetivo
 TARGET_MODEL: Final = "dreame.fwd.u2527"
 
-# Intervalo de sondeo (segundos). El dispositivo actualiza ~1/min.
-DEFAULT_SCAN_INTERVAL: Final = 30
+# Intervalos de sondeo (segundos):
+#  - SCAN_INTERVAL_POLL: sin push MQTT (o si se cae) -> sondeo frecuente.
+#  - SCAN_INTERVAL_PUSH: con push vivo -> el sondeo es solo red de seguridad.
+SCAN_INTERVAL_POLL: Final = 30
+SCAN_INTERVAL_PUSH: Final = 300
 
 # --- Endpoints / secretos del protocolo de la app Dreamehome ---
 PORT: Final = "13267"
