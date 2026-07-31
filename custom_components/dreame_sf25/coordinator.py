@@ -15,7 +15,16 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import DreameApiError, DreameAuthError, DreameSF25Client
-from .const import POLL_PROPERTIES, SCAN_INTERVAL_POLL, SCAN_INTERVAL_PUSH
+from .const import (
+    EVENT_SAFETY_STOP,
+    POLL_PROPERTIES,
+    PROGRAM_OPTIONS,
+    PROP_PROGRAM,
+    PROP_TEMPERATURE,
+    SAFETY_TEMP_LIMITS,
+    SCAN_INTERVAL_POLL,
+    SCAN_INTERVAL_PUSH,
+)
 from .mqtt import DreameSF25Mqtt
 
 _LOGGER = logging.getLogger(__name__)
@@ -34,6 +43,8 @@ class DreameSF25Coordinator(DataUpdateCoordinator[dict[tuple[int, int], Any]]):
         self.entry = entry
         self.client = client
         self.mqtt = DreameSF25Mqtt(client, self._handle_push)
+        # evita repetir la parada mientras la temperatura siga alta
+        self._safety_tripped = False
 
     # ------------------------------------------------------------------- push
     async def async_start_push(self) -> None:
@@ -59,7 +70,77 @@ class DreameSF25Coordinator(DataUpdateCoordinator[dict[tuple[int, int], Any]]):
         data = dict(self.data or {})
         data.update(updates)
         self._sync_interval()
+        self._check_safety(data)
         self.async_set_updated_data(data)
+
+    # --------------------------------------------------------------- seguridad
+    @callback
+    def _check_safety(self, data: dict[tuple[int, int], Any]) -> None:
+        """Para el aparato si la temperatura supera el limite del programa.
+
+        Proteccion SECUNDARIA: depende de HA y de la nube, no sustituye al
+        corte termico del propio aparato.
+        """
+        raw_temp = data.get(PROP_TEMPERATURE)
+        raw_prog = data.get(PROP_PROGRAM)
+        if raw_temp is None or raw_prog is None:
+            return
+        try:
+            temp = float(raw_temp)
+            program = int(raw_prog)
+        except (ValueError, TypeError):
+            return
+
+        limit = SAFETY_TEMP_LIMITS.get(program)
+        if limit is None or temp <= limit:
+            # sin programa activo, o temperatura normal: rearmamos
+            self._safety_tripped = False
+            return
+
+        if self._safety_tripped:
+            return  # ya se ordeno la parada; no repetimos
+        self._safety_tripped = True
+
+        _LOGGER.error(
+            "PARADA DE SEGURIDAD: %.1f C supera el limite de %s C del programa activo; "
+            "deteniendo el Dreame SF25",
+            temp,
+            limit,
+        )
+        self.hass.async_create_task(self._async_safety_stop(temp, limit, program))
+
+    async def _async_safety_stop(self, temp: float, limit: int, program: int) -> None:
+        """Envia la orden de parada, con reintentos, y avisa mediante un evento."""
+        siid, piid = PROP_PROGRAM
+        stopped = False
+        for attempt in (1, 2, 3):
+            try:
+                await self.hass.async_add_executor_job(
+                    self.client.set_property, siid, piid, PROGRAM_OPTIONS["idle"]
+                )
+                stopped = True
+                break
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.error(
+                    "Parada de seguridad: intento %s fallido (%s)", attempt, err
+                )
+
+        self.hass.bus.async_fire(
+            EVENT_SAFETY_STOP,
+            {
+                "device_id": self.client.did,
+                "temperature": temp,
+                "limit": limit,
+                "program": program,
+                "stopped": stopped,
+            },
+        )
+        if not stopped:
+            _LOGGER.error(
+                "PARADA DE SEGURIDAD NO CONFIRMADA: no se pudo detener el aparato. "
+                "Desconectalo manualmente si la temperatura sigue alta."
+            )
+        await self.async_request_refresh()
 
     # ----------------------------------------------------------------- sondeo
     @callback
@@ -85,4 +166,5 @@ class DreameSF25Coordinator(DataUpdateCoordinator[dict[tuple[int, int], Any]]):
         # el sondeo confirma el estado completo; el push solo trae lo que cambia
         merged = dict(self.data or {})
         merged.update(data)
+        self._check_safety(merged)
         return merged

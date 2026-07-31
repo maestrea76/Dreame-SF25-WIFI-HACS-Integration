@@ -63,6 +63,18 @@ PROGRAM_OPTIONS: Final = {      # opcion -> valor (para escribir desde el select
     "self_clean": 2,
 }
 
+# --- Parada de seguridad por temperatura ---
+# Si la temperatura supera el limite del programa en curso, la integracion
+# detiene el aparato (escribe 2.3 = -1) y dispara EVENT_SAFETY_STOP.
+# Referencia: un ciclo normal no suele pasar de 140 C.
+# NOTA: es una proteccion SECUNDARIA; depende de HA y de la nube. No sustituye
+# al corte termico del propio aparato.
+SAFETY_TEMP_LIMITS: Final = {
+    0: 150,   # ciclo normal (PROGRAM 'cycle')
+    2: 100,   # autolimpieza (PROGRAM 'self_clean')
+}
+EVENT_SAFETY_STOP: Final = "dreame_sf25_safety_stop"
+
 PROP_LID: Final = (6, 26)              # tapa: abierta/cerrada (binary_sensor)
 
 # Controles (escribibles):

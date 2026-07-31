@@ -99,6 +99,24 @@ safety net (every 5 min while push is alive, 30 s if it drops).
 > Note: writes only apply while the device is **awake**; in suspend mode
 > (status = suspended) they are ignored and the integration raises an error.
 
+## Temperature safety stop
+
+The integration watches the temperature on every update and **stops the device**
+(program → stopped) if it exceeds the limit for the running program:
+
+| Program | Limit |
+|---|---|
+| Cycle | **150 °C** (a normal cycle stays around 140 °C) |
+| Self-clean | **100 °C** |
+
+It retries the stop command up to 3 times and fires a
+`dreame_sf25_safety_stop` event (with `temperature`, `limit`, `program`,
+`stopped`) that you can use to send yourself a notification.
+
+> ⚠️ This is a **secondary** safeguard: it depends on Home Assistant, your
+> network and the Dreame cloud being up. It does **not** replace the appliance's
+> own thermal cut-off. Limits live in `SAFETY_TEMP_LIMITS` (`const.py`).
+
 ## Reverse engineering
 
 The tools in [`tools/`](tools/) are used for discovery:
@@ -210,6 +228,24 @@ como red de seguridad (cada 5 min con el push vivo, 30 s si se cae).
 
 > Nota: las escrituras solo se aplican con el aparato **despierto**; en modo
 > suspensión (estado = suspensión) se ignoran y la integración avisa con un error.
+
+## Parada de seguridad por temperatura
+
+La integración vigila la temperatura en cada actualización y **detiene el aparato**
+(programa → parado) si supera el límite del programa en curso:
+
+| Programa | Límite |
+|---|---|
+| Ciclo | **150 °C** (un ciclo normal se mueve sobre 140 °C) |
+| Autolimpieza | **100 °C** |
+
+Reintenta la orden de parada hasta 3 veces y dispara el evento
+`dreame_sf25_safety_stop` (con `temperature`, `limit`, `program`, `stopped`),
+que puedes usar para enviarte una notificación.
+
+> ⚠️ Es una protección **secundaria**: depende de que Home Assistant, tu red y la
+> nube de Dreame estén operativos. **No sustituye** al corte térmico del propio
+> aparato. Los límites están en `SAFETY_TEMP_LIMITS` (`const.py`).
 
 ## Ingeniería inversa
 
