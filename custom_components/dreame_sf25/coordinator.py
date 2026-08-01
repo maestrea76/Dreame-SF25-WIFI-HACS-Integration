@@ -25,6 +25,7 @@ from .const import (
     SCAN_INTERVAL_POLL,
     SCAN_INTERVAL_PUSH,
 )
+from .modes import DreameSF25Modes
 from .mqtt import DreameSF25Mqtt
 
 _LOGGER = logging.getLogger(__name__)
@@ -45,6 +46,7 @@ class DreameSF25Coordinator(DataUpdateCoordinator[dict[tuple[int, int], Any]]):
         self.mqtt = DreameSF25Mqtt(client, self._handle_push)
         # evita repetir la parada mientras la temperatura siga alta
         self._safety_tripped = False
+        self.modes = DreameSF25Modes(hass, self, entry.entry_id)
 
     # ------------------------------------------------------------------- push
     async def async_start_push(self) -> None:
@@ -71,6 +73,7 @@ class DreameSF25Coordinator(DataUpdateCoordinator[dict[tuple[int, int], Any]]):
         data.update(updates)
         self._sync_interval()
         self._check_safety(data)
+        self.modes.handle_update(data)
         self.async_set_updated_data(data)
 
     # --------------------------------------------------------------- seguridad
@@ -167,4 +170,5 @@ class DreameSF25Coordinator(DataUpdateCoordinator[dict[tuple[int, int], Any]]):
         merged = dict(self.data or {})
         merged.update(data)
         self._check_safety(merged)
+        self.modes.handle_update(merged)
         return merged

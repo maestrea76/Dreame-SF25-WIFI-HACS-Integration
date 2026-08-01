@@ -41,6 +41,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: DreameSF25ConfigEntry) -
         raise ConfigEntryNotReady(str(err)) from err
 
     coordinator = DreameSF25Coordinator(hass, entry, client)
+    # contador de aperturas y modos virtuales (Remover / Compactar)
+    await coordinator.modes.async_load()
     await coordinator.async_config_entry_first_refresh()
     # push en tiempo real; si falla, el coordinator sigue sondeando
     await coordinator.async_start_push()
@@ -55,4 +57,5 @@ async def async_unload_entry(hass: HomeAssistant, entry: DreameSF25ConfigEntry) 
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
         await entry.runtime_data.async_stop_push()
+        await entry.runtime_data.modes.async_unload()
     return unloaded

@@ -22,22 +22,36 @@
   },
   "entity": {
     "binary_sensor": {
-      "running": { "name": "En marcha" },
-      "lid": { "name": "Tapa" }
+      "running": {
+        "name": "En marcha"
+      },
+      "lid": {
+        "name": "Tapa"
+      }
     },
     "button": {
-      "pause": { "name": "Pausar" },
-      "resume": { "name": "Reanudar" },
-      "open_lid": { "name": "Abrir tapa" },
-      "wake": { "name": "Despertar" }
+      "pause": {
+        "name": "Pausar"
+      },
+      "resume": {
+        "name": "Reanudar"
+      },
+      "open_lid": {
+        "name": "Abrir tapa"
+      },
+      "wake": {
+        "name": "Despertar"
+      }
     },
     "select": {
       "program": {
         "name": "Programa",
         "state": {
           "idle": "Parado",
-          "cycle": "Ciclo",
-          "self_clean": "Autolimpieza"
+          "cycle": "Triturar",
+          "self_clean": "Autolimpieza",
+          "stir": "Remover",
+          "compact": "Compactar"
         }
       }
     },
@@ -50,16 +64,35 @@
           "suspended": "Suspensión"
         }
       },
-      "remaining_time": { "name": "Tiempo restante" },
-      "energy": { "name": "Energía" },
-      "carbon_filter_pct": { "name": "Vida del filtro de carbón" },
-      "carbon_filter_days": { "name": "Filtro de carbón restante" },
-      "temperature": { "name": "Temperatura" },
-      "humidity": { "name": "Humedad" }
+      "remaining_time": {
+        "name": "Tiempo restante"
+      },
+      "energy": {
+        "name": "Energía"
+      },
+      "carbon_filter_pct": {
+        "name": "Vida del filtro de carbón"
+      },
+      "carbon_filter_days": {
+        "name": "Filtro de carbón restante"
+      },
+      "temperature": {
+        "name": "Temperatura"
+      },
+      "humidity": {
+        "name": "Humedad"
+      },
+      "lid_count": {
+        "name": "Aperturas de tapa"
+      }
     },
     "switch": {
-      "child_lock": { "name": "Bloqueo infantil" },
-      "silent_mode": { "name": "Modo silencio" }
+      "child_lock": {
+        "name": "Bloqueo infantil"
+      },
+      "silent_mode": {
+        "name": "Modo silencio"
+      }
     }
   }
 }

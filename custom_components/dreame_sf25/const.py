@@ -63,6 +63,32 @@ PROGRAM_OPTIONS: Final = {      # opcion -> valor (para escribir desde el select
     "self_clean": 2,
 }
 
+# --- Modos virtuales -------------------------------------------------------
+# El aparato solo conoce ciclo (0) y autolimpieza (2). "Remover" y "Compactar"
+# son autolimpiezas acotadas en el tiempo por la integracion: se lanza 2.3=2 y
+# se para al cumplirse la duracion. Al usuario se le muestran como modos propios.
+PROGRAM_STIR: Final = "stir"           # Remover: autolimpieza corta
+PROGRAM_COMPACT: Final = "compact"     # Compactar: autolimpieza larga
+
+VIRTUAL_DURATIONS: Final = {
+    PROGRAM_STIR: 10 * 60,             # 10 minutos
+    PROGRAM_COMPACT: 60 * 60,          # 1 hora
+}
+
+# Opciones que ofrece el select (en orden de aparicion)
+SELECT_OPTIONS: Final = ["idle", "cycle", "self_clean", PROGRAM_STIR, PROGRAM_COMPACT]
+
+# Disparo automatico
+LID_COUNT_THRESHOLD: Final = 2         # aperturas de tapa necesarias
+COMPACT_TRIGGER_HOUR: Final = 15       # Compactar diario a las 15:00
+COMPACT_TRIGGER_MINUTE: Final = 0
+
+# Se considera que un programa termino de forma natural si al acabar le
+# quedaba menos de esto (min). Si se cancela antes, el contador NO se reinicia.
+NATURAL_END_REMAINING: Final = 1
+
+STORAGE_VERSION: Final = 1
+
 # --- Parada de seguridad por temperatura ---
 # Si la temperatura supera el limite del programa en curso, la integracion
 # detiene el aparato (escribe 2.3 = -1) y dispara EVENT_SAFETY_STOP.

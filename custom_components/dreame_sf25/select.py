@@ -17,7 +17,9 @@ from .const import (
     PROGRAM_MAP,
     PROGRAM_OPTIONS,
     PROP_PROGRAM,
+    SELECT_OPTIONS,
     TARGET_MODEL,
+    VIRTUAL_DURATIONS,
 )
 from .coordinator import DreameSF25Coordinator
 
@@ -37,7 +39,7 @@ class DreameSF25ProgramSelect(CoordinatorEntity[DreameSF25Coordinator], SelectEn
     _attr_has_entity_name = True
     _attr_translation_key = "program"
     _attr_icon = "mdi:playlist-play"
-    _attr_options = list(PROGRAM_OPTIONS.keys())
+    _attr_options = list(SELECT_OPTIONS)
 
     def __init__(self, coordinator: DreameSF25Coordinator) -> None:
         super().__init__(coordinator)
@@ -52,6 +54,10 @@ class DreameSF25ProgramSelect(CoordinatorEntity[DreameSF25Coordinator], SelectEn
 
     @property
     def current_option(self) -> str | None:
+        # Remover/Compactar son autolimpiezas acotadas: mientras esten activas
+        # mostramos el modo virtual en vez de "Autolimpieza".
+        if self.coordinator.modes.virtual_mode is not None:
+            return self.coordinator.modes.virtual_mode
         raw = (self.coordinator.data or {}).get(PROP_PROGRAM)
         if raw is None:
             return None
@@ -61,9 +67,15 @@ class DreameSF25ProgramSelect(CoordinatorEntity[DreameSF25Coordinator], SelectEn
             return None
 
     async def async_select_option(self, option: str) -> None:
-        value = PROGRAM_OPTIONS[option]
+        modes = self.coordinator.modes
+        if option in VIRTUAL_DURATIONS:
+            await modes.async_start_virtual(option)
+            return
+
+        # cambio a un modo real: cancelamos cualquier modo virtual en curso
+        await modes.async_clear_virtual()
         siid, piid = PROP_PROGRAM
         await self.hass.async_add_executor_job(
-            self.coordinator.client.set_property, siid, piid, value
+            self.coordinator.client.set_property, siid, piid, PROGRAM_OPTIONS[option]
         )
         await self.coordinator.async_request_refresh()

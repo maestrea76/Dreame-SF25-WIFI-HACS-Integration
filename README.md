@@ -99,6 +99,28 @@ safety net (every 5 min while push is alive, 30 s if it drops).
 > Note: writes only apply while the device is **awake**; in suspend mode
 > (status = suspended) they are ignored and the integration raises an error.
 
+## Modes
+
+The appliance only knows two programs (grind and self-clean). The integration adds
+two **virtual modes** built on top of self-clean, bounded in time:
+
+| Mode | What it does | Duration |
+|---|---|---|
+| Grind | Normal grinding cycle | ~6 h |
+| Self-clean | Full self-clean | ~90 min |
+| **Stir** | Self-clean, stopped early | **10 min** |
+| **Compact** | Self-clean, stopped early | **1 h** |
+
+**Automatic triggers** (based on a lid-opening counter kept by the integration):
+
+- **Stir** — when the lid closes and at least **2 openings** have accumulated.
+- **Compact** — daily at **15:00**, if at least 2 openings have accumulated.
+
+The counter resets **only when Grind or Self-clean finish naturally**; if you cancel
+them early, or if Stir/Compact ran, it is kept. Opening the lid during Stir/Compact
+does not cancel them. State survives a Home Assistant restart, and Stir/Compact
+inherit the self-clean temperature limit (100 °C).
+
 ## Temperature safety stop
 
 The integration watches the temperature on every update and **stops the device**
@@ -228,6 +250,29 @@ como red de seguridad (cada 5 min con el push vivo, 30 s si se cae).
 
 > Nota: las escrituras solo se aplican con el aparato **despierto**; en modo
 > suspensión (estado = suspensión) se ignoran y la integración avisa con un error.
+
+## Modos
+
+El aparato solo conoce dos programas (triturar y autolimpieza). La integración añade
+dos **modos virtuales** construidos sobre la autolimpieza, acotados en el tiempo:
+
+| Modo | Qué hace | Duración |
+|---|---|---|
+| Triturar | Ciclo de triturado normal | ~6 h |
+| Autolimpieza | Autolimpieza completa | ~90 min |
+| **Remover** | Autolimpieza, parada antes | **10 min** |
+| **Compactar** | Autolimpieza, parada antes | **1 h** |
+
+**Disparos automáticos** (según un contador de aperturas de tapa que lleva la integración):
+
+- **Remover** — al cerrarse la tapa habiendo acumulado **2 aperturas** o más.
+- **Compactar** — a diario a las **15:00**, si hay 2 aperturas o más acumuladas.
+
+El contador se reinicia **solo cuando Triturar o Autolimpieza terminan de forma
+natural**; si los cancelas a medias, o si lo que corrió fue Remover/Compactar, se
+conserva. Abrir la tapa durante Remover/Compactar no los cancela. El estado sobrevive
+a un reinicio de Home Assistant, y Remover/Compactar heredan el límite de temperatura
+de la autolimpieza (100 °C).
 
 ## Parada de seguridad por temperatura
 

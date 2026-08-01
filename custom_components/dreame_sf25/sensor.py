@@ -19,6 +19,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -74,6 +75,8 @@ class DreameSF25SensorDescription(SensorEntityDescription):
     value_fn: Callable[[Any], Any] = lambda v: v
     compute_fn: Callable[[dict[tuple[int, int], Any]], Any] | None = None
     attrs_fn: Callable[[Any], dict] | None = None
+    # valor tomado del propio coordinator (p.ej. contadores de la integracion)
+    coord_fn: Callable[[Any], Any] | None = None
 
 
 SENSORS: tuple[DreameSF25SensorDescription, ...] = (
@@ -133,6 +136,16 @@ SENSORS: tuple[DreameSF25SensorDescription, ...] = (
         prop=PROP_TEMPERATURE,
     ),
     DreameSF25SensorDescription(
+        key="lid_count",
+        translation_key="lid_count",
+        name="Lid openings",
+        icon="mdi:counter",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_class=SensorStateClass.MEASUREMENT,
+        # el contador lo lleva la integracion, no el aparato
+        coord_fn=lambda coord: coord.modes.lid_count,
+    ),
+    DreameSF25SensorDescription(
         key="humidity",
         translation_key="humidity",
         name="Humidity",
@@ -178,6 +191,8 @@ class DreameSF25Sensor(CoordinatorEntity[DreameSF25Coordinator], SensorEntity):
 
     @property
     def native_value(self) -> Any:
+        if self.entity_description.coord_fn is not None:
+            return self.entity_description.coord_fn(self.coordinator)
         data = self.coordinator.data or {}
         if self.entity_description.compute_fn is not None:
             return self.entity_description.compute_fn(data)
@@ -206,6 +221,8 @@ class DreameSF25Sensor(CoordinatorEntity[DreameSF25Coordinator], SensorEntity):
     def available(self) -> bool:
         if not super().available:
             return False
+        if self.entity_description.coord_fn is not None:
+            return True
         if self.entity_description.compute_fn is not None:
             return True
         return self.entity_description.prop in (self.coordinator.data or {})

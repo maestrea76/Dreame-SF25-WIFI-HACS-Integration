@@ -22,22 +22,36 @@
   },
   "entity": {
     "binary_sensor": {
-      "running": { "name": "Running" },
-      "lid": { "name": "Lid" }
+      "running": {
+        "name": "Running"
+      },
+      "lid": {
+        "name": "Lid"
+      }
     },
     "button": {
-      "pause": { "name": "Pause" },
-      "resume": { "name": "Resume" },
-      "open_lid": { "name": "Open lid" },
-      "wake": { "name": "Wake" }
+      "pause": {
+        "name": "Pause"
+      },
+      "resume": {
+        "name": "Resume"
+      },
+      "open_lid": {
+        "name": "Open lid"
+      },
+      "wake": {
+        "name": "Wake"
+      }
     },
     "select": {
       "program": {
         "name": "Program",
         "state": {
           "idle": "Stopped",
-          "cycle": "Cycle",
-          "self_clean": "Self-clean"
+          "cycle": "Grind",
+          "self_clean": "Self-clean",
+          "stir": "Stir",
+          "compact": "Compact"
         }
       }
     },
@@ -50,16 +64,35 @@
           "suspended": "Suspended"
         }
       },
-      "remaining_time": { "name": "Remaining time" },
-      "energy": { "name": "Energy" },
-      "carbon_filter_pct": { "name": "Carbon filter life" },
-      "carbon_filter_days": { "name": "Carbon filter remaining" },
-      "temperature": { "name": "Temperature" },
-      "humidity": { "name": "Humidity" }
+      "remaining_time": {
+        "name": "Remaining time"
+      },
+      "energy": {
+        "name": "Energy"
+      },
+      "carbon_filter_pct": {
+        "name": "Carbon filter life"
+      },
+      "carbon_filter_days": {
+        "name": "Carbon filter remaining"
+      },
+      "temperature": {
+        "name": "Temperature"
+      },
+      "humidity": {
+        "name": "Humidity"
+      },
+      "lid_count": {
+        "name": "Lid openings"
+      }
     },
     "switch": {
-      "child_lock": { "name": "Child lock" },
-      "silent_mode": { "name": "Silent mode" }
+      "child_lock": {
+        "name": "Child lock"
+      },
+      "silent_mode": {
+        "name": "Silent mode"
+      }
     }
   }
 }
