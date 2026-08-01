@@ -102,8 +102,15 @@ STORAGE_VERSION: Final = 1
 # NOTA: es una proteccion SECUNDARIA; depende de HA y de la nube. No sustituye
 # al corte termico del propio aparato.
 SAFETY_TEMP_LIMITS: Final = {
-    0: 150,   # ciclo normal (PROGRAM 'cycle')
-    2: 100,   # autolimpieza (PROGRAM 'self_clean')
+    0: 150,   # ciclo normal (PROGRAM 'cycle'); funciona sobre 140 C
+    2: 100,   # autolimpieza completa (PROGRAM 'self_clean'); funciona sobre 90 C
+}
+# Remover y Compactar corren COMO autolimpieza (2.3=2), pero alcanzan mas
+# temperatura que un ciclo de limpieza normal: con el limite de 100 C se
+# cortaban al minuto (medido: 102 C). Se les aplica su propio limite.
+SAFETY_TEMP_LIMITS_VIRTUAL: Final = {
+    "stir": 150,      # mismo limite que Triturar
+    "compact": 150,
 }
 EVENT_SAFETY_STOP: Final = "dreame_sf25_safety_stop"
 

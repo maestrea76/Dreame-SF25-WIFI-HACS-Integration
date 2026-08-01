@@ -22,6 +22,7 @@ from .const import (
     PROP_PROGRAM,
     PROP_TEMPERATURE,
     SAFETY_TEMP_LIMITS,
+    SAFETY_TEMP_LIMITS_VIRTUAL,
     SCAN_INTERVAL_POLL,
     SCAN_INTERVAL_PUSH,
 )
@@ -94,7 +95,13 @@ class DreameSF25Coordinator(DataUpdateCoordinator[dict[tuple[int, int], Any]]):
         except (ValueError, TypeError):
             return
 
-        limit = SAFETY_TEMP_LIMITS.get(program)
+        # Remover/Compactar se ejecutan como autolimpieza: hay que mirar el
+        # modo virtual para saber que limite aplicar.
+        virtual = self.modes.virtual_mode
+        if virtual is not None and program in SAFETY_TEMP_LIMITS:
+            limit = SAFETY_TEMP_LIMITS_VIRTUAL.get(virtual)
+        else:
+            limit = SAFETY_TEMP_LIMITS.get(program)
         if limit is None or temp <= limit:
             # sin programa activo, o temperatura normal: rearmamos
             self._safety_tripped = False
@@ -105,10 +112,11 @@ class DreameSF25Coordinator(DataUpdateCoordinator[dict[tuple[int, int], Any]]):
         self._safety_tripped = True
 
         _LOGGER.error(
-            "PARADA DE SEGURIDAD: %.1f C supera el limite de %s C del programa activo; "
+            "PARADA DE SEGURIDAD: %.1f C supera el limite de %s C (%s); "
             "deteniendo el Dreame SF25",
             temp,
             limit,
+            virtual or f"programa {program}",
         )
         self.hass.async_create_task(self._async_safety_stop(temp, limit, program))
 

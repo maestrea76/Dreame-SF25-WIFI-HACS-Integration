@@ -124,17 +124,18 @@ them from the UI or from automations.
 The counter resets **only when Grind or Self-clean finish naturally**; if you cancel
 them early, or if Stir/Compact ran, it is kept. Opening the lid during Stir/Compact
 does not cancel them. State survives a Home Assistant restart, and Stir/Compact
-inherit the self-clean temperature limit (100 °C).
+use their own temperature limit (150 °C).
 
 ## Temperature safety stop
 
 The integration watches the temperature on every update and **stops the device**
 (program → stopped) if it exceeds the limit for the running program:
 
-| Program | Limit |
-|---|---|
-| Cycle | **150 °C** (a normal cycle stays around 140 °C) |
-| Self-clean | **100 °C** |
+| Program | Limit | Normal running temp |
+|---|---|---|
+| Grind | **150 °C** | ~140 °C |
+| Self-clean | **100 °C** | ~90 °C |
+| Stir / Compact | **150 °C** | they run hotter than a plain self-clean |
 
 It retries the stop command up to 3 times and fires a
 `dreame_sf25_safety_stop` event (with `temperature`, `limit`, `program`,
@@ -281,18 +282,19 @@ desde la interfaz o desde automatizaciones.
 El contador se reinicia **solo cuando Triturar o Autolimpieza terminan de forma
 natural**; si los cancelas a medias, o si lo que corrió fue Remover/Compactar, se
 conserva. Abrir la tapa durante Remover/Compactar no los cancela. El estado sobrevive
-a un reinicio de Home Assistant, y Remover/Compactar heredan el límite de temperatura
-de la autolimpieza (100 °C).
+a un reinicio de Home Assistant, y Remover/Compactar usan su propio límite de
+temperatura (150 °C).
 
 ## Parada de seguridad por temperatura
 
 La integración vigila la temperatura en cada actualización y **detiene el aparato**
 (programa → parado) si supera el límite del programa en curso:
 
-| Programa | Límite |
-|---|---|
-| Ciclo | **150 °C** (un ciclo normal se mueve sobre 140 °C) |
-| Autolimpieza | **100 °C** |
+| Programa | Límite | Temperatura normal |
+|---|---|---|
+| Triturar | **150 °C** | ~140 °C |
+| Autolimpieza | **100 °C** | ~90 °C |
+| Remover / Compactar | **150 °C** | alcanzan más que una autolimpieza normal |
 
 Reintenta la orden de parada hasta 3 veces y dispara el evento
 `dreame_sf25_safety_stop` (con `temperature`, `limit`, `program`, `stopped`),
