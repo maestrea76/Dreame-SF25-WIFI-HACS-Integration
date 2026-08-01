@@ -61,6 +61,22 @@ def _fmt_remaining(v: Any) -> str | None:
     return f"{mm}min"
 
 
+def _remaining_minutes(coordinator) -> int | None:
+    """Minutos restantes de lo que realmente esta corriendo.
+
+    En Remover/Compactar el aparato informa el tiempo de SU autolimpieza, no el
+    del modo acotado; en ese caso mostramos el del modo.
+    """
+    virtual = coordinator.modes.virtual_remaining_minutes
+    if virtual is not None:
+        return virtual
+    raw = (coordinator.data or {}).get(PROP_REMAINING_TIME)
+    try:
+        return int(raw)
+    except (ValueError, TypeError):
+        return None
+
+
 @dataclass(frozen=True, kw_only=True)
 class DreameSF25SensorDescription(SensorEntityDescription):
     """Descripcion de sensor con clave MIoT y conversion.
@@ -74,6 +90,9 @@ class DreameSF25SensorDescription(SensorEntityDescription):
     value_fn: Callable[[Any], Any] = lambda v: v
     compute_fn: Callable[[dict[tuple[int, int], Any]], Any] | None = None
     attrs_fn: Callable[[Any], dict] | None = None
+    # valor/atributos calculados a partir del coordinator (no de una sola prop)
+    coord_fn: Callable[[Any], Any] | None = None
+    coord_attrs_fn: Callable[[Any], dict | None] | None = None
 
 
 SENSORS: tuple[DreameSF25SensorDescription, ...] = (
@@ -91,8 +110,10 @@ SENSORS: tuple[DreameSF25SensorDescription, ...] = (
         name="Remaining time",
         icon="mdi:timer-sand",
         prop=PROP_REMAINING_TIME,
-        value_fn=_fmt_remaining,
-        attrs_fn=lambda raw: {"minutes": int(raw)},
+        coord_fn=lambda c: _fmt_remaining(_remaining_minutes(c)),
+        coord_attrs_fn=lambda c: (
+            None if _remaining_minutes(c) is None else {"minutes": _remaining_minutes(c)}
+        ),
     ),
     DreameSF25SensorDescription(
         key="energy",
@@ -178,6 +199,8 @@ class DreameSF25Sensor(CoordinatorEntity[DreameSF25Coordinator], SensorEntity):
 
     @property
     def native_value(self) -> Any:
+        if self.entity_description.coord_fn is not None:
+            return self.entity_description.coord_fn(self.coordinator)
         data = self.coordinator.data or {}
         if self.entity_description.compute_fn is not None:
             return self.entity_description.compute_fn(data)
@@ -192,6 +215,8 @@ class DreameSF25Sensor(CoordinatorEntity[DreameSF25Coordinator], SensorEntity):
     @property
     def extra_state_attributes(self) -> dict | None:
         desc = self.entity_description
+        if desc.coord_attrs_fn is not None:
+            return desc.coord_attrs_fn(self.coordinator)
         if desc.attrs_fn is None or desc.prop is None:
             return None
         raw = (self.coordinator.data or {}).get(desc.prop)

@@ -73,6 +73,9 @@ class DreameSF25Modes:
         # (Remover/Compactar). Sirve para no confundir su final con el de un
         # programa real y, por tanto, no tocar el contador.
         self._owns_program: bool = False
+        # valor de 2.11 que reporto el aparato al arrancar el modo virtual
+        # (la autolimpieza empieza en ~90 min); sirve para deducir lo transcurrido
+        self._virtual_start_remaining: int | None = None
         # instante de la ultima orden enviada: durante unos segundos las lecturas
         # pueden venir desfasadas (el aparato aun no ha arrancado/parado)
         self._command_at: float = 0.0
@@ -83,6 +86,24 @@ class DreameSF25Modes:
 
         self._unsub_timer = None
         self._unsub_daily = None
+
+    @property
+    def virtual_remaining_minutes(self) -> int | None:
+        """Minutos que faltan del modo virtual, deducidos del contador del aparato.
+
+        El aparato informa en 2.11 el tiempo de SU autolimpieza (~90 min), no el
+        del modo acotado. Calculamos:
+            transcurrido = valor_al_arrancar - valor_actual
+            restante     = duracion_del_modo - transcurrido
+        """
+        if self.virtual_mode is None or self._virtual_start_remaining is None:
+            return None
+        current = _as_int((self.coordinator.data or {}).get(PROP_REMAINING_TIME))
+        if current is None:
+            return None
+        elapsed = self._virtual_start_remaining - current
+        total = VIRTUAL_DURATIONS[self.virtual_mode] // 60
+        return max(0, total - elapsed)
 
     # ------------------------------------------------------------ ciclo de vida
     async def async_load(self) -> None:
@@ -180,6 +201,7 @@ class DreameSF25Modes:
         self._cancel_timer()
         self.virtual_mode = None
         self._virtual_until = 0.0
+        self._virtual_start_remaining = None
         await self._async_set_program(_PROGRAM_IDLE)
         await self._async_save()
         await self.coordinator.async_request_refresh()
@@ -199,6 +221,7 @@ class DreameSF25Modes:
         """Arranca Remover o Compactar (autolimpieza acotada)."""
         duration = VIRTUAL_DURATIONS[mode]
         self._owns_program = True
+        self._virtual_start_remaining = None
         await self._async_set_program(_PROGRAM_SELF_CLEAN)
         self.virtual_mode = mode
         self._virtual_until = time.time() + duration
@@ -214,6 +237,7 @@ class DreameSF25Modes:
         self._cancel_timer()
         self.virtual_mode = None
         self._virtual_until = 0.0
+        self._virtual_start_remaining = None
         self._owns_program = False
         await self._async_save()
 
@@ -232,6 +256,17 @@ class DreameSF25Modes:
 
         if program is not None and program != _PROGRAM_IDLE and remaining is not None:
             self._last_remaining = remaining
+            # primer valor util tras arrancar un modo virtual: es la referencia
+            if (
+                self.virtual_mode is not None
+                and self._virtual_start_remaining is None
+                and remaining > 0
+            ):
+                self._virtual_start_remaining = remaining
+                _LOGGER.debug(
+                    "%s: el aparato arranca con %s min; se mostraran los del modo",
+                    self.virtual_mode, remaining,
+                )
 
         # --- fin de programa: decidir si reiniciar el contador ---
         if (
@@ -267,6 +302,7 @@ class DreameSF25Modes:
                 self._cancel_timer()
                 self.virtual_mode = None
                 self._virtual_until = 0.0
+                self._virtual_start_remaining = None
             else:
                 _LOGGER.debug("Fin de un modo virtual; contador intacto (%s)", self.lid_count)
             await self._async_save()
