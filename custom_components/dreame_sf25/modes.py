@@ -28,6 +28,7 @@ from homeassistant.helpers.event import async_call_later, async_track_time_chang
 from homeassistant.helpers.storage import Store
 
 from .const import (
+    COMMAND_GRACE,
     DEFAULT_COMPACT_HOUR,
     DEFAULT_COMPACT_MINUTE,
     DOMAIN,
@@ -67,6 +68,14 @@ class DreameSF25Modes:
         # hora del disparo diario de Compactar (editable desde HA)
         self.compact_hour: int = DEFAULT_COMPACT_HOUR
         self.compact_minute: int = DEFAULT_COMPACT_MINUTE
+
+        # True mientras el programa que corre en el aparato lo lanzamos nosotros
+        # (Remover/Compactar). Sirve para no confundir su final con el de un
+        # programa real y, por tanto, no tocar el contador.
+        self._owns_program: bool = False
+        # instante de la ultima orden enviada: durante unos segundos las lecturas
+        # pueden venir desfasadas (el aparato aun no ha arrancado/parado)
+        self._command_at: float = 0.0
 
         self._last_lid: int | None = None
         self._last_program: int | None = None
@@ -163,7 +172,11 @@ class DreameSF25Modes:
         await self._async_finish_virtual()
 
     async def _async_finish_virtual(self) -> None:
-        """Detiene el aparato y cierra el modo virtual."""
+        """Detiene el aparato y cierra el modo virtual.
+
+        Se conserva _owns_program para que el 'fin de programa' que provocara
+        esta parada NO se confunda con el final de un programa real.
+        """
         self._cancel_timer()
         self.virtual_mode = None
         self._virtual_until = 0.0
@@ -174,6 +187,7 @@ class DreameSF25Modes:
     # -------------------------------------------------------------------- ordenes
     async def _async_set_program(self, value: int) -> None:
         siid, piid = PROP_PROGRAM
+        self._command_at = time.time()
         try:
             await self.hass.async_add_executor_job(
                 self.coordinator.client.set_property, siid, piid, value
@@ -184,6 +198,7 @@ class DreameSF25Modes:
     async def async_start_virtual(self, mode: str) -> None:
         """Arranca Remover o Compactar (autolimpieza acotada)."""
         duration = VIRTUAL_DURATIONS[mode]
+        self._owns_program = True
         await self._async_set_program(_PROGRAM_SELF_CLEAN)
         self.virtual_mode = mode
         self._virtual_until = time.time() + duration
@@ -199,6 +214,7 @@ class DreameSF25Modes:
         self._cancel_timer()
         self.virtual_mode = None
         self._virtual_until = 0.0
+        self._owns_program = False
         await self._async_save()
 
     async def async_reset_counter(self) -> None:
@@ -222,6 +238,9 @@ class DreameSF25Modes:
             self._last_program is not None
             and program == _PROGRAM_IDLE
             and self._last_program in (_PROGRAM_CYCLE, _PROGRAM_SELF_CLEAN)
+            # tras enviar una orden las lecturas pueden venir desfasadas: no
+            # damos por terminado un programa que quiza ni siquiera ha arrancado
+            and (time.time() - self._command_at) > COMMAND_GRACE
         ):
             self.hass.async_create_task(self._async_program_ended())
 
@@ -236,12 +255,20 @@ class DreameSF25Modes:
 
     async def _async_program_ended(self) -> None:
         """Un programa del aparato acaba de terminar."""
-        if self.virtual_mode is not None:
-            # Remover/Compactar: nunca reinician el contador. Si el aparato paro
-            # por su cuenta antes de tiempo, cerramos el modo virtual.
-            self._cancel_timer()
-            self.virtual_mode = None
-            self._virtual_until = 0.0
+        if self.virtual_mode is not None or self._owns_program:
+            # Remover/Compactar: NUNCA reinician el contador. Si el aparato paro
+            # por su cuenta antes de tiempo, cerramos tambien el modo virtual.
+            self._owns_program = False
+            if self.virtual_mode is not None:
+                _LOGGER.info(
+                    "%s terminado antes de tiempo por el aparato; contador intacto (%s)",
+                    self.virtual_mode, self.lid_count,
+                )
+                self._cancel_timer()
+                self.virtual_mode = None
+                self._virtual_until = 0.0
+            else:
+                _LOGGER.debug("Fin de un modo virtual; contador intacto (%s)", self.lid_count)
             await self._async_save()
             return
 

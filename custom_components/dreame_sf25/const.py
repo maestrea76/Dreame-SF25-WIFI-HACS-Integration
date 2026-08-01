@@ -89,6 +89,10 @@ LID_COUNT_MAX: Final = 99              # tope de la entidad number
 # quedaba menos de esto (min). Si se cancela antes, el contador NO se reinicia.
 NATURAL_END_REMAINING: Final = 1
 
+# Segundos tras enviar una orden en los que ignoramos los 'fin de programa':
+# la nube puede devolver todavia el estado anterior y provocar falsos finales.
+COMMAND_GRACE: Final = 20
+
 STORAGE_VERSION: Final = 1
 
 # --- Parada de seguridad por temperatura ---
