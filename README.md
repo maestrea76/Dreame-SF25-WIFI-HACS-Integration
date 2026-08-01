@@ -114,7 +114,12 @@ two **virtual modes** built on top of self-clean, bounded in time:
 **Automatic triggers** (based on a lid-opening counter kept by the integration):
 
 - **Stir** — when the lid closes and at least **2 openings** have accumulated.
-- **Compact** — daily at **15:00**, if at least 2 openings have accumulated.
+- **Compact** — daily at a **configurable time** (default 15:00), if at least 2
+  openings have accumulated. Set it with the **Compact time** entity.
+
+Both the counter (**Lid openings**, a `number` you can read and edit) and the
+schedule (**Compact time**, a `time`) are exposed as entities, so you can adjust
+them from the UI or from automations.
 
 The counter resets **only when Grind or Self-clean finish naturally**; if you cancel
 them early, or if Stir/Compact ran, it is kept. Opening the lid during Stir/Compact
@@ -266,7 +271,12 @@ dos **modos virtuales** construidos sobre la autolimpieza, acotados en el tiempo
 **Disparos automáticos** (según un contador de aperturas de tapa que lleva la integración):
 
 - **Remover** — al cerrarse la tapa habiendo acumulado **2 aperturas** o más.
-- **Compactar** — a diario a las **15:00**, si hay 2 aperturas o más acumuladas.
+- **Compactar** — a diario a una **hora configurable** (por defecto 15:00), si hay
+  2 aperturas o más acumuladas. Se ajusta con la entidad **Hora de compactar**.
+
+Tanto el contador (**Aperturas de tapa**, un `number` que puedes leer y editar) como
+la hora (**Hora de compactar**, un `time`) son entidades, así que puedes cambiarlos
+desde la interfaz o desde automatizaciones.
 
 El contador se reinicia **solo cuando Triturar o Autolimpieza terminan de forma
 natural**; si los cancelas a medias, o si lo que corrió fue Remover/Compactar, se

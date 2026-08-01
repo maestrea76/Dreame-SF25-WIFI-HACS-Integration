@@ -81,9 +81,6 @@
       },
       "humidity": {
         "name": "Humidity"
-      },
-      "lid_count": {
-        "name": "Lid openings"
       }
     },
     "switch": {
@@ -92,6 +89,16 @@
       },
       "silent_mode": {
         "name": "Silent mode"
+      }
+    },
+    "number": {
+      "lid_count": {
+        "name": "Lid openings"
+      }
+    },
+    "time": {
+      "compact_time": {
+        "name": "Compact time"
       }
     }
   }

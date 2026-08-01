@@ -81,9 +81,6 @@
       },
       "humidity": {
         "name": "Humedad"
-      },
-      "lid_count": {
-        "name": "Aperturas de tapa"
       }
     },
     "switch": {
@@ -92,6 +89,16 @@
       },
       "silent_mode": {
         "name": "Modo silencio"
+      }
+    },
+    "number": {
+      "lid_count": {
+        "name": "Aperturas de tapa"
+      }
+    },
+    "time": {
+      "compact_time": {
+        "name": "Hora de compactar"
       }
     }
   }

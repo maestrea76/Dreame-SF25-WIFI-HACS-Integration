@@ -8,7 +8,7 @@ dos modos propios sobre la autolimpieza, acotandola en el tiempo:
 
 Disparos automaticos:
   - Remover  : al cerrar la tapa, si se han acumulado >= 2 aperturas.
-  - Compactar: a las 15:00, si se han acumulado >= 2 aperturas.
+  - Compactar: a la hora configurada (por defecto 15:00), con >= 2 aperturas.
 
 Contador de aperturas: se reinicia SOLO cuando Triturar o Autolimpieza terminan
 de forma natural. Si se cancelan a medias, o si lo que corrio fue Remover o
@@ -28,8 +28,8 @@ from homeassistant.helpers.event import async_call_later, async_track_time_chang
 from homeassistant.helpers.storage import Store
 
 from .const import (
-    COMPACT_TRIGGER_HOUR,
-    COMPACT_TRIGGER_MINUTE,
+    DEFAULT_COMPACT_HOUR,
+    DEFAULT_COMPACT_MINUTE,
     DOMAIN,
     LID_COUNT_THRESHOLD,
     NATURAL_END_REMAINING,
@@ -64,6 +64,9 @@ class DreameSF25Modes:
         self.lid_count: int = 0
         self.virtual_mode: str | None = None
         self._virtual_until: float = 0.0
+        # hora del disparo diario de Compactar (editable desde HA)
+        self.compact_hour: int = DEFAULT_COMPACT_HOUR
+        self.compact_minute: int = DEFAULT_COMPACT_MINUTE
 
         self._last_lid: int | None = None
         self._last_program: int | None = None
@@ -79,14 +82,10 @@ class DreameSF25Modes:
         self.lid_count = int(data.get("lid_count", 0))
         self.virtual_mode = data.get("virtual_mode")
         self._virtual_until = float(data.get("virtual_until", 0) or 0)
+        self.compact_hour = int(data.get("compact_hour", DEFAULT_COMPACT_HOUR))
+        self.compact_minute = int(data.get("compact_minute", DEFAULT_COMPACT_MINUTE))
 
-        self._unsub_daily = async_track_time_change(
-            self.hass,
-            self._async_daily_compact,
-            hour=COMPACT_TRIGGER_HOUR,
-            minute=COMPACT_TRIGGER_MINUTE,
-            second=0,
-        )
+        self._schedule_daily()
 
         if self.virtual_mode:
             remaining = self._virtual_until - time.time()
@@ -115,8 +114,37 @@ class DreameSF25Modes:
                 "lid_count": self.lid_count,
                 "virtual_mode": self.virtual_mode,
                 "virtual_until": self._virtual_until,
+                "compact_hour": self.compact_hour,
+                "compact_minute": self.compact_minute,
             }
         )
+
+    @callback
+    def _schedule_daily(self) -> None:
+        """(Re)programa el disparo diario de Compactar a la hora configurada."""
+        if self._unsub_daily is not None:
+            self._unsub_daily()
+        self._unsub_daily = async_track_time_change(
+            self.hass,
+            self._async_daily_compact,
+            hour=self.compact_hour,
+            minute=self.compact_minute,
+            second=0,
+        )
+        _LOGGER.debug("Compactar programado a las %02d:%02d", self.compact_hour, self.compact_minute)
+
+    async def async_set_compact_time(self, hour: int, minute: int) -> None:
+        """Cambia la hora del disparo diario de Compactar."""
+        self.compact_hour = int(hour)
+        self.compact_minute = int(minute)
+        self._schedule_daily()
+        await self._async_save()
+
+    async def async_set_lid_count(self, value: int) -> None:
+        """Fija el contador de aperturas (editable desde HA)."""
+        self.lid_count = max(0, int(value))
+        await self._async_save()
+        self.coordinator.async_update_listeners()
 
     # --------------------------------------------------------------- temporizador
     @callback
@@ -176,6 +204,7 @@ class DreameSF25Modes:
     async def async_reset_counter(self) -> None:
         self.lid_count = 0
         await self._async_save()
+        self.coordinator.async_update_listeners()
 
     # ------------------------------------------------------------- observador
     @callback
@@ -235,6 +264,7 @@ class DreameSF25Modes:
         """La tapa se acaba de cerrar."""
         self.lid_count += 1
         await self._async_save()
+        self.coordinator.async_update_listeners()
         _LOGGER.debug("Tapa cerrada; aperturas acumuladas: %s", self.lid_count)
 
         if self.virtual_mode is not None:
@@ -249,17 +279,21 @@ class DreameSF25Modes:
             await self.async_start_virtual(PROGRAM_STIR)
 
     async def _async_daily_compact(self, _now) -> None:
-        """Disparo diario de Compactar a las 15:00."""
+        """Disparo diario de Compactar a la hora configurada."""
         if self.lid_count < LID_COUNT_THRESHOLD:
             return
         if self.virtual_mode is not None:
             return
         program = _as_int((self.coordinator.data or {}).get(PROP_PROGRAM))
         if program is not None and program != _PROGRAM_IDLE:
-            _LOGGER.info("15:00 con %s aperturas, pero hay un programa en marcha: se omite Compactar",
-                         self.lid_count)
+            _LOGGER.info(
+                "%02d:%02d con %s aperturas, pero hay un programa en marcha: se omite Compactar",
+                self.compact_hour,
+                self.compact_minute,
+                self.lid_count,
+            )
             return
-        _LOGGER.info("15:00 con %s aperturas acumuladas: iniciando Compactar", self.lid_count)
+        _LOGGER.info("Disparo diario con %s aperturas acumuladas: iniciando Compactar", self.lid_count)
         await self.async_start_virtual(PROGRAM_COMPACT)
 
 

@@ -80,8 +80,10 @@ SELECT_OPTIONS: Final = ["idle", "cycle", "self_clean", PROGRAM_STIR, PROGRAM_CO
 
 # Disparo automatico
 LID_COUNT_THRESHOLD: Final = 2         # aperturas de tapa necesarias
-COMPACT_TRIGGER_HOUR: Final = 15       # Compactar diario a las 15:00
-COMPACT_TRIGGER_MINUTE: Final = 0
+# Hora por defecto de Compactar; editable desde HA (entidad "Hora de compactar")
+DEFAULT_COMPACT_HOUR: Final = 15
+DEFAULT_COMPACT_MINUTE: Final = 0
+LID_COUNT_MAX: Final = 99              # tope de la entidad number
 
 # Se considera que un programa termino de forma natural si al acabar le
 # quedaba menos de esto (min). Si se cancela antes, el contador NO se reinicia.
