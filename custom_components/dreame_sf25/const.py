@@ -106,8 +106,8 @@ STORAGE_VERSION: Final = 1
 # NOTA: es una proteccion SECUNDARIA; depende de HA y de la nube. No sustituye
 # al corte termico del propio aparato.
 SAFETY_TEMP_LIMITS: Final = {
-    0: 120,   # triturado; pico medido ~117 C
-    1: 120,   # Secado extra (~2 h); arranca caliente y va enfriando
+    0: 150,   # triturado; pico medido ~117 C
+    1: 150,   # Secado extra (~2 h); arranca caliente y va enfriando
     2: 100,   # autolimpieza completa; funciona sobre 90 C
 }
 # Remover y Compactar corren COMO autolimpieza (2.3=2), pero alcanzan mas
