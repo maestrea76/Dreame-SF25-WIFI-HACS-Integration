@@ -50,16 +50,20 @@ STATUS_MAP: Final = {
 }
 
 # Programa (PROP_PROGRAM = 2.3). Escribir este valor arranca/para el programa:
-#   -1 = parar/inactivo, 0 = iniciar ciclo normal (360 min), 2 = iniciar autolimpieza (90 min).
-# 1 = ¿tercer modo? (sin confirmar).
+#   -1 = parar/inactivo, 0 = triturado (360 min), 2 = autolimpieza (90 min).
+#    1 = "Secado extra": fase de ~2 h que el aparato encadena SOLO al terminar el
+#        triturado. Sin mapear hasta v0.3.5, el select mostraba 'unknown' y, como
+#        el programa nunca pasaba a -1, el contador de aperturas no se reiniciaba.
 PROGRAM_MAP: Final = {          # valor -> opcion
     -1: "idle",
     0: "cycle",
+    1: "extra",       # Secado extra: fase automatica tras el triturado (~2 h)
     2: "self_clean",
 }
 PROGRAM_OPTIONS: Final = {      # opcion -> valor (para escribir desde el select)
     "idle": -1,
     "cycle": 0,
+    "extra": 1,
     "self_clean": 2,
 }
 
@@ -76,10 +80,10 @@ VIRTUAL_DURATIONS: Final = {
 }
 
 # Opciones que ofrece el select (en orden de aparicion)
-SELECT_OPTIONS: Final = ["idle", "cycle", "self_clean", PROGRAM_STIR, PROGRAM_COMPACT]
+SELECT_OPTIONS: Final = ["idle", "cycle", "extra", "self_clean", PROGRAM_STIR, PROGRAM_COMPACT]
 
 # Disparo automatico
-LID_COUNT_THRESHOLD: Final = 2         # aperturas de tapa necesarias
+LID_COUNT_THRESHOLD: Final = 3         # aperturas de tapa necesarias
 # Hora por defecto de Compactar; editable desde HA (entidad "Hora de compactar")
 DEFAULT_COMPACT_HOUR: Final = 15
 DEFAULT_COMPACT_MINUTE: Final = 0
@@ -102,15 +106,16 @@ STORAGE_VERSION: Final = 1
 # NOTA: es una proteccion SECUNDARIA; depende de HA y de la nube. No sustituye
 # al corte termico del propio aparato.
 SAFETY_TEMP_LIMITS: Final = {
-    0: 150,   # ciclo normal (PROGRAM 'cycle'); funciona sobre 140 C
-    2: 100,   # autolimpieza completa (PROGRAM 'self_clean'); funciona sobre 90 C
+    0: 120,   # triturado; pico medido ~117 C
+    1: 120,   # Secado extra (~2 h); arranca caliente y va enfriando
+    2: 100,   # autolimpieza completa; funciona sobre 90 C
 }
 # Remover y Compactar corren COMO autolimpieza (2.3=2), pero alcanzan mas
 # temperatura que un ciclo de limpieza normal: con el limite de 100 C se
 # cortaban al minuto (medido: 102 C). Se les aplica su propio limite.
 SAFETY_TEMP_LIMITS_VIRTUAL: Final = {
-    "stir": 150,      # mismo limite que Triturar
-    "compact": 150,
+    "stir": 120,      # mismo limite que Triturar; pico medido ~102 C
+    "compact": 120,
 }
 EVENT_SAFETY_STOP: Final = "dreame_sf25_safety_stop"
 

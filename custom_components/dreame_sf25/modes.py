@@ -7,11 +7,13 @@ dos modos propios sobre la autolimpieza, acotandola en el tiempo:
   - Compactar : autolimpieza durante 1 hora.
 
 Disparos automaticos:
-  - Remover  : al cerrar la tapa, si se han acumulado >= 2 aperturas.
-  - Compactar: a la hora configurada (por defecto 15:00), con >= 2 aperturas.
+  - Remover  : al cerrar la tapa, si se han acumulado >= 3 aperturas.
+  - Compactar: a la hora configurada (por defecto 15:00), con >= 3 aperturas.
 
-Contador de aperturas: se reinicia SOLO cuando Triturar o Autolimpieza terminan
-de forma natural. Si se cancelan a medias, o si lo que corrio fue Remover o
+Contador de aperturas: se reinicia SOLO cuando termina de forma natural un
+programa del aparato (triturado, secado extra o autolimpieza). Ojo: el aparato
+encadena "secado extra" (2.3=1, ~2 h) al acabar el triturado, asi que el final
+que cuenta es el de esa fase, no el del triturado. Si se cancelan a medias, o si lo que corrio fue Remover o
 Compactar, el contador se conserva.
 
 El estado (contador, modo virtual en curso y su vencimiento) se guarda en disco
@@ -52,6 +54,9 @@ _LOGGER = logging.getLogger(__name__)
 _PROGRAM_IDLE: int = PROGRAM_OPTIONS["idle"]
 _PROGRAM_CYCLE: int = PROGRAM_OPTIONS["cycle"]
 _PROGRAM_SELF_CLEAN: int = PROGRAM_OPTIONS["self_clean"]
+_PROGRAM_EXTRA: int = PROGRAM_OPTIONS["extra"]
+# programas del aparato cuyo final debe evaluarse para reiniciar el contador
+_RUNNING_PROGRAMS: tuple[int, ...] = (_PROGRAM_CYCLE, _PROGRAM_EXTRA, _PROGRAM_SELF_CLEAN)
 
 
 class DreameSF25Modes:
@@ -272,7 +277,7 @@ class DreameSF25Modes:
         if (
             self._last_program is not None
             and program == _PROGRAM_IDLE
-            and self._last_program in (_PROGRAM_CYCLE, _PROGRAM_SELF_CLEAN)
+            and self._last_program in _RUNNING_PROGRAMS
             # tras enviar una orden las lecturas pueden venir desfasadas: no
             # damos por terminado un programa que quiza ni siquiera ha arrancado
             and (time.time() - self._command_at) > COMMAND_GRACE

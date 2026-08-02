@@ -51,7 +51,8 @@
           "cycle": "Grind",
           "self_clean": "Self-clean",
           "stir": "Stir",
-          "compact": "Compact"
+          "compact": "Compact",
+          "extra": "Extra drying"
         }
       }
     },
