@@ -122,10 +122,10 @@ Both the counter (**Lid openings**, a `number` you can read and edit) and the
 schedule (**Compact time**, a `time`) are exposed as entities, so you can adjust
 them from the UI or from automations.
 
-The counter resets **only when one of the appliance's own programs finishes
-naturally**. Note that grinding is followed by *Extra drying*, so the end that
-counts is that of the drying phase, ~2 h later. If you cancel a program early, or
-if Stir/Compact ran, the counter is kept. Opening the lid during Stir/Compact
+The counter resets when **any of the appliance's own programs finishes naturally**
+— grinding, extra drying or self-clean — since grinding is not always followed by
+a drying phase. If you cancel a program early, or if Stir/Compact ran, the counter
+is kept. Opening the lid during Stir/Compact
 does not cancel them. State survives a Home Assistant restart, and Stir/Compact
 use their own temperature limit (120 °C).
 
@@ -134,12 +134,12 @@ use their own temperature limit (120 °C).
 The integration watches the temperature on every update and **stops the device**
 (program → stopped) if it exceeds the limit for the running program:
 
-| Program | Limit | Measured peak |
-|---|---:|---:|
-| Grind | **150 °C** | 117 °C |
-| Extra drying (automatic, ~2 h after grinding) | **150 °C** | 117 °C, cooling down |
-| Stir / Compact | **120 °C** | 102 °C |
-| Self-clean | **100 °C** | ~90 °C |
+| Program | Limit |
+|---|---:|
+| Grind | **150 °C** |
+| Extra drying (automatic, after grinding) | **150 °C** |
+| Stir / Compact | **120 °C** |
+| Self-clean | **100 °C** |
 
 It retries the stop command up to 3 times and fires a
 `dreame_sf25_safety_stop` event (with `temperature`, `limit`, `program`,
@@ -284,10 +284,10 @@ Tanto el contador (**Aperturas de tapa**, un `number` que puedes leer y editar) 
 la hora (**Hora de compactar**, un `time`) son entidades, así que puedes cambiarlos
 desde la interfaz o desde automatizaciones.
 
-El contador se reinicia **solo cuando termina de forma natural un programa propio
-del aparato**. Ojo: al triturado le sigue el *Secado extra*, así que el final que
-cuenta es el de esa fase, ~2 h después. Si cancelas un programa a medias, o si lo
-que corrió fue Remover/Compactar, el contador se conserva. Abrir la tapa durante Remover/Compactar no los cancela. El estado sobrevive
+El contador se reinicia cuando **termina de forma natural cualquier programa
+propio del aparato** — triturado, secado extra o autolimpieza —, ya que al
+triturado no siempre le sigue una fase de secado. Si cancelas un programa a
+medias, o si lo que corrió fue Remover/Compactar, el contador se conserva. Abrir la tapa durante Remover/Compactar no los cancela. El estado sobrevive
 a un reinicio de Home Assistant, y Remover/Compactar usan su propio límite de
 temperatura (120 °C).
 
@@ -296,12 +296,12 @@ temperatura (120 °C).
 La integración vigila la temperatura en cada actualización y **detiene el aparato**
 (programa → parado) si supera el límite del programa en curso:
 
-| Programa | Límite | Pico medido |
-|---|---:|---:|
-| Triturar | **150 °C** | 117 °C |
-| Secado extra (automático, ~2 h tras triturar) | **150 °C** | 117 °C, enfriando |
-| Remover / Compactar | **120 °C** | 102 °C |
-| Autolimpieza | **100 °C** | ~90 °C |
+| Programa | Límite |
+|---|---:|
+| Triturar | **150 °C** |
+| Secado extra (automático, tras triturar) | **150 °C** |
+| Remover / Compactar | **120 °C** |
+| Autolimpieza | **100 °C** |
 
 Reintenta la orden de parada hasta 3 veces y dispara el evento
 `dreame_sf25_safety_stop` (con `temperature`, `limit`, `program`, `stopped`),

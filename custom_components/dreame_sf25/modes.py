@@ -10,10 +10,11 @@ Disparos automaticos:
   - Remover  : al cerrar la tapa, si se han acumulado >= 3 aperturas.
   - Compactar: a la hora configurada (por defecto 15:00), con >= 3 aperturas.
 
-Contador de aperturas: se reinicia SOLO cuando termina de forma natural un
-programa del aparato (triturado, secado extra o autolimpieza). Ojo: el aparato
-encadena "secado extra" (2.3=1, ~2 h) al acabar el triturado, asi que el final
-que cuenta es el de esa fase, no el del triturado. Si se cancelan a medias, o si lo que corrio fue Remover o
+Contador de aperturas: se reinicia cuando termina de forma natural cualquier
+programa propio del aparato (triturado, secado extra o autolimpieza). Cuenta
+como final cualquier cambio de programa, no solo pasar a inactivo, porque tras
+el triturado el aparato encadena a veces "secado extra" (2.3=1, ~2 h) y otras
+veces no. Si se cancelan a medias, o si lo que corrio fue Remover o
 Compactar, el contador se conserva.
 
 El estado (contador, modo virtual en curso y su vencimiento) se guarda en disco
@@ -37,6 +38,7 @@ from .const import (
     LID_COUNT_THRESHOLD,
     NATURAL_END_REMAINING,
     PROGRAM_COMPACT,
+    PROGRAM_MAP,
     PROGRAM_OPTIONS,
     PROGRAM_STIR,
     PROP_LID,
@@ -259,6 +261,25 @@ class DreameSF25Modes:
         program = _as_int(data.get(PROP_PROGRAM))
         remaining = _as_int(data.get(PROP_REMAINING_TIME))
 
+        # --- fin de programa: decidir si reiniciar el contador ---
+        # Se evalua ANTES de refrescar _last_remaining, porque al encadenar
+        # triturado -> secado extra el aparato ya informa el tiempo de la fase
+        # nueva y perderiamos el ultimo valor del programa que acaba de terminar.
+        # Cuenta como final cualquier cambio de programa (no solo pasar a
+        # inactivo): tras el triturado no siempre viene el secado extra.
+        if (
+            self._last_program is not None
+            and program is not None
+            and program != self._last_program
+            and self._last_program in _RUNNING_PROGRAMS
+            # tras enviar una orden las lecturas pueden venir desfasadas: no
+            # damos por terminado un programa que quiza ni siquiera ha arrancado
+            and (time.time() - self._command_at) > COMMAND_GRACE
+        ):
+            self.hass.async_create_task(
+                self._async_program_ended(self._last_program, self._last_remaining)
+            )
+
         if program is not None and program != _PROGRAM_IDLE and remaining is not None:
             self._last_remaining = remaining
             # primer valor util tras arrancar un modo virtual: es la referencia
@@ -272,17 +293,8 @@ class DreameSF25Modes:
                     "%s: el aparato arranca con %s min; se mostraran los del modo",
                     self.virtual_mode, remaining,
                 )
-
-        # --- fin de programa: decidir si reiniciar el contador ---
-        if (
-            self._last_program is not None
-            and program == _PROGRAM_IDLE
-            and self._last_program in _RUNNING_PROGRAMS
-            # tras enviar una orden las lecturas pueden venir desfasadas: no
-            # damos por terminado un programa que quiza ni siquiera ha arrancado
-            and (time.time() - self._command_at) > COMMAND_GRACE
-        ):
-            self.hass.async_create_task(self._async_program_ended())
+        elif program == _PROGRAM_IDLE:
+            self._last_remaining = None
 
         # --- tapa: contar cierre tras apertura ---
         if lid is not None:
@@ -293,8 +305,12 @@ class DreameSF25Modes:
         if program is not None:
             self._last_program = program
 
-    async def _async_program_ended(self) -> None:
-        """Un programa del aparato acaba de terminar."""
+    async def _async_program_ended(self, ended: int, last_remaining: int | None) -> None:
+        """Un programa del aparato acaba de terminar.
+
+        `ended` es el programa que termina y `last_remaining` su ultimo tiempo
+        restante conocido, capturados antes de refrescar el estado.
+        """
         if self.virtual_mode is not None or self._owns_program:
             # Remover/Compactar: NUNCA reinician el contador. Si el aparato paro
             # por su cuenta antes de tiempo, cerramos tambien el modo virtual.
@@ -313,20 +329,20 @@ class DreameSF25Modes:
             await self._async_save()
             return
 
-        natural = (
-            self._last_remaining is not None
-            and self._last_remaining <= NATURAL_END_REMAINING
-        )
+        natural = last_remaining is not None and last_remaining <= NATURAL_END_REMAINING
         if natural:
-            _LOGGER.debug("Programa completado; contador de aperturas a cero")
+            _LOGGER.info(
+                "Programa %s completado; contador de aperturas a cero",
+                PROGRAM_MAP.get(ended, ended),
+            )
             await self.async_reset_counter()
         else:
             _LOGGER.debug(
-                "Programa cancelado (quedaban %s min); se conserva el contador (%s)",
-                self._last_remaining,
+                "Programa %s cancelado (quedaban %s min); se conserva el contador (%s)",
+                PROGRAM_MAP.get(ended, ended),
+                last_remaining,
                 self.lid_count,
             )
-        self._last_remaining = None
 
     async def _async_lid_closed(self, program: int | None) -> None:
         """La tapa se acaba de cerrar."""
