@@ -1,7 +1,8 @@
 """Select (programa) del Dreame SF25.
 
 Escribir la propiedad 2.3 arranca/para los programas:
-  idle=-1 (parar) · cycle=0 (ciclo normal) · self_clean=2 (autolimpieza).
+  idle=-1 (parar) · cycle=0 (triturar) · extra=1 (secado extra) ·
+  self_clean=2 (autolimpieza).
 """
 from __future__ import annotations
 

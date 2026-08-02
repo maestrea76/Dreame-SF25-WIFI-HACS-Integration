@@ -40,7 +40,7 @@ PROP_CARBON_FILTER_DAYS: Final = (4, 4)  # dias restantes para limpiar filtro de
 # Estado del ciclo (2.1, enum) y flag marcha/pausa (2.10). Van unidos.
 PROP_STATUS: Final = (2, 1)             # estado nativo (enum), ver STATUS_MAP
 PROP_RUNNING: Final = (2, 10)           # tri-estado: -1=apagado, 0=pausa, 1=marcha
-PROP_PROGRAM: Final = (2, 3)            # programa activo: -1=inactivo, 0=ciclo normal, 2=autolimpieza
+PROP_PROGRAM: Final = (2, 3)            # programa activo; ver PROGRAM_MAP
 
 # Estado nativo del aparato (PROP_STATUS = 2.1). Se ira completando.
 STATUS_MAP: Final = {
@@ -102,7 +102,6 @@ STORAGE_VERSION: Final = 1
 # --- Parada de seguridad por temperatura ---
 # Si la temperatura supera el limite del programa en curso, la integracion
 # detiene el aparato (escribe 2.3 = -1) y dispara EVENT_SAFETY_STOP.
-# Referencia: un ciclo normal no suele pasar de 140 C.
 # NOTA: es una proteccion SECUNDARIA; depende de HA y de la nube. No sustituye
 # al corte termico del propio aparato.
 SAFETY_TEMP_LIMITS: Final = {
@@ -114,7 +113,7 @@ SAFETY_TEMP_LIMITS: Final = {
 # temperatura que un ciclo de limpieza normal: con el limite de 100 C se
 # cortaban al minuto (medido: 102 C). Se les aplica su propio limite.
 SAFETY_TEMP_LIMITS_VIRTUAL: Final = {
-    "stir": 120,      # mismo limite que Triturar; pico medido ~102 C
+    "stir": 120,      # pico medido ~102 C
     "compact": 120,
 }
 EVENT_SAFETY_STOP: Final = "dreame_sf25_safety_stop"

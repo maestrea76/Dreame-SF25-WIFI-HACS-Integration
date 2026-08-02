@@ -91,7 +91,7 @@ safety net (every 5 min while push is alive, 30 s if it drops).
 
 | Entity | Prop | Action |
 |---|---|---|
-| Program (select) | 2.3 | Stopped (-1) / Cycle (0) / Self-clean (2) — starts and stops |
+| Program (select) | 2.3 | Stopped / Grind / Extra drying / Self-clean / Stir / Compact |
 | Pause / Resume (button) | 2.10 | Pauses (0) / resumes (1) the running program |
 | Child lock (switch) | 6.10 | on/off (only effective while a cycle runs) |
 | Silent mode (switch) | 6.17 | on/off |
@@ -101,41 +101,45 @@ safety net (every 5 min while push is alive, 30 s if it drops).
 
 ## Modes
 
-The appliance only knows two programs (grind and self-clean). The integration adds
-two **virtual modes** built on top of self-clean, bounded in time:
+The appliance has three programs of its own; the integration adds two **virtual
+modes** built on top of self-clean, bounded in time:
 
 | Mode | What it does | Duration |
 |---|---|---|
 | Grind | Normal grinding cycle | ~6 h |
+| Extra drying | Chained **automatically** by the appliance after grinding | ~2 h |
 | Self-clean | Full self-clean | ~90 min |
 | **Stir** | Self-clean, stopped early | **10 min** |
 | **Compact** | Self-clean, stopped early | **1 h** |
 
 **Automatic triggers** (based on a lid-opening counter kept by the integration):
 
-- **Stir** — when the lid closes and at least **2 openings** have accumulated.
-- **Compact** — daily at a **configurable time** (default 15:00), if at least 2
+- **Stir** — when the lid closes and at least **3 openings** have accumulated.
+- **Compact** — daily at a **configurable time** (default 15:00), if at least 3
   openings have accumulated. Set it with the **Compact time** entity.
 
 Both the counter (**Lid openings**, a `number` you can read and edit) and the
 schedule (**Compact time**, a `time`) are exposed as entities, so you can adjust
 them from the UI or from automations.
 
-The counter resets **only when Grind or Self-clean finish naturally**; if you cancel
-them early, or if Stir/Compact ran, it is kept. Opening the lid during Stir/Compact
+The counter resets **only when one of the appliance's own programs finishes
+naturally**. Note that grinding is followed by *Extra drying*, so the end that
+counts is that of the drying phase, ~2 h later. If you cancel a program early, or
+if Stir/Compact ran, the counter is kept. Opening the lid during Stir/Compact
 does not cancel them. State survives a Home Assistant restart, and Stir/Compact
-use their own temperature limit (150 °C).
+use their own temperature limit (120 °C).
 
 ## Temperature safety stop
 
 The integration watches the temperature on every update and **stops the device**
 (program → stopped) if it exceeds the limit for the running program:
 
-| Program | Limit | Normal running temp |
-|---|---|---|
-| Grind | **150 °C** | ~140 °C |
+| Program | Limit | Measured peak |
+|---|---:|---:|
+| Grind | **150 °C** | 117 °C |
+| Extra drying (automatic, ~2 h after grinding) | **150 °C** | 117 °C, cooling down |
+| Stir / Compact | **120 °C** | 102 °C |
 | Self-clean | **100 °C** | ~90 °C |
-| Stir / Compact | **150 °C** | they run hotter than a plain self-clean |
 
 It retries the stop command up to 3 times and fires a
 `dreame_sf25_safety_stop` event (with `temperature`, `limit`, `program`,
@@ -249,7 +253,7 @@ como red de seguridad (cada 5 min con el push vivo, 30 s si se cae).
 
 | Entidad | Prop | Acción |
 |---|---|---|
-| Programa (select) | 2.3 | Parado (-1) / Ciclo (0) / Autolimpieza (2) — inicia y para |
+| Programa (select) | 2.3 | Parado / Triturar / Secado extra / Autolimpieza / Remover / Compactar |
 | Pausar / Reanudar (button) | 2.10 | Pausa (0) / reanuda (1) el programa en marcha |
 | Bloqueo infantil (switch) | 6.10 | on/off (solo efectivo con ciclo en marcha) |
 | Modo silencio (switch) | 6.17 | on/off |
@@ -259,42 +263,45 @@ como red de seguridad (cada 5 min con el push vivo, 30 s si se cae).
 
 ## Modos
 
-El aparato solo conoce dos programas (triturar y autolimpieza). La integración añade
-dos **modos virtuales** construidos sobre la autolimpieza, acotados en el tiempo:
+El aparato tiene tres programas propios; la integración añade dos **modos
+virtuales** construidos sobre la autolimpieza, acotados en el tiempo:
 
 | Modo | Qué hace | Duración |
 |---|---|---|
 | Triturar | Ciclo de triturado normal | ~6 h |
+| Secado extra | Lo encadena **solo el aparato** tras triturar | ~2 h |
 | Autolimpieza | Autolimpieza completa | ~90 min |
 | **Remover** | Autolimpieza, parada antes | **10 min** |
 | **Compactar** | Autolimpieza, parada antes | **1 h** |
 
 **Disparos automáticos** (según un contador de aperturas de tapa que lleva la integración):
 
-- **Remover** — al cerrarse la tapa habiendo acumulado **2 aperturas** o más.
+- **Remover** — al cerrarse la tapa habiendo acumulado **3 aperturas** o más.
 - **Compactar** — a diario a una **hora configurable** (por defecto 15:00), si hay
-  2 aperturas o más acumuladas. Se ajusta con la entidad **Hora de compactar**.
+  3 aperturas o más acumuladas. Se ajusta con la entidad **Hora de compactar**.
 
 Tanto el contador (**Aperturas de tapa**, un `number` que puedes leer y editar) como
 la hora (**Hora de compactar**, un `time`) son entidades, así que puedes cambiarlos
 desde la interfaz o desde automatizaciones.
 
-El contador se reinicia **solo cuando Triturar o Autolimpieza terminan de forma
-natural**; si los cancelas a medias, o si lo que corrió fue Remover/Compactar, se
-conserva. Abrir la tapa durante Remover/Compactar no los cancela. El estado sobrevive
+El contador se reinicia **solo cuando termina de forma natural un programa propio
+del aparato**. Ojo: al triturado le sigue el *Secado extra*, así que el final que
+cuenta es el de esa fase, ~2 h después. Si cancelas un programa a medias, o si lo
+que corrió fue Remover/Compactar, el contador se conserva. Abrir la tapa durante Remover/Compactar no los cancela. El estado sobrevive
 a un reinicio de Home Assistant, y Remover/Compactar usan su propio límite de
-temperatura (150 °C).
+temperatura (120 °C).
 
 ## Parada de seguridad por temperatura
 
 La integración vigila la temperatura en cada actualización y **detiene el aparato**
 (programa → parado) si supera el límite del programa en curso:
 
-| Programa | Límite | Temperatura normal |
-|---|---|---|
-| Triturar | **150 °C** | ~140 °C |
+| Programa | Límite | Pico medido |
+|---|---:|---:|
+| Triturar | **150 °C** | 117 °C |
+| Secado extra (automático, ~2 h tras triturar) | **150 °C** | 117 °C, enfriando |
+| Remover / Compactar | **120 °C** | 102 °C |
 | Autolimpieza | **100 °C** | ~90 °C |
-| Remover / Compactar | **150 °C** | alcanzan más que una autolimpieza normal |
 
 Reintenta la orden de parada hasta 3 veces y dispara el evento
 `dreame_sf25_safety_stop` (con `temperature`, `limit`, `program`, `stopped`),
